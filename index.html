@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Eric 的遊戲中心</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Press+Start+2P&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --surface: #f8f9fa;
+            --card: #ffffff;
+            --on-surface: #202124;
+            --on-surface-variant: #5f6368;
+            --outline: #dadce0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--surface);
+            color: var(--on-surface);
+            font-family: 'Google Sans', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 導覽列樣式 */
+        nav {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--outline);
+            height: 64px;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            justify-content: space-between;
+            box-shadow: 0 1px 2px rgba(60, 64, 67, 0.1);
+        }
+
+        .nav-brand {
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--primary);
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .nav-links::-webkit-scrollbar { display: none; }
+
+        .nav-btn {
+            padding: 8px 14px;
+            border-radius: 24px;
+            text-decoration: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.85rem;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--on-surface-variant);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .nav-btn:hover {
+            background: #f1f3f4;
+            color: var(--on-surface);
+        }
+
+        .nav-btn.active {
+            background: #e8f0fe;
+            color: var(--primary);
+        }
+
+        /* 內容區域 */
+        #content-area {
+            flex: 1;
+            padding: 40px 24px;
+        }
+
+        .home-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .hero-title {
+            font-size: 2.75rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--on-surface);
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-top: 48px;
+        }
+
+        /* 遊戲卡片樣式 */
+        .game-card {
+            display: flex;
+            flex-direction: column;
+            text-decoration: none;
+            background: var(--card);
+            border-radius: 28px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid var(--outline);
+            text-align: left;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .game-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(60,64,67,0.15);
+            border-color: #aecbfa;
+        }
+
+        .card-banner {
+            height: 180px;
+            background: #f1f3f4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            transition: transform 0.5s ease;
+        }
+
+        .game-card:hover .card-banner {
+            transform: scale(1.05);
+        }
+
+        .card-content {
+            padding: 24px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--on-surface);
+        }
+
+        .card-desc {
+            color: var(--on-surface-variant);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .footer {
+            margin-top: 80px;
+            color: var(--on-surface-variant);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--outline);
+            padding-top: 24px;
+            text-align: center;
+            padding-bottom: 40px;
+        }
+
+        @media (max-width: 640px) {
+            .hero-title { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="index.html" class="nav-brand">ERIC GAMES</a>
+        <div class="nav-links">
+            <a href="index.html" class="nav-btn active">首頁</a>
+            <a href="太空模擬.html" target="_blank" class="nav-btn">太空模擬</a>
+            <a href="數獨.html" target="_blank" class="nav-btn">數獨 Pro+</a>
+            <a href="https://sites.google.com/view/erichunggames/%E6%B2%99%E7%9B%92" target="_blank" class="nav-btn">沙盒</a>
+            <a href="https://sites.google.com/view/erichunggames/%E8%B1%A1%E6%A3%8B" target="_blank" class="nav-btn">象棋</a>
+        </div>
+    </nav>
+
+    <div id="content-area">
+        <div class="home-container">
+            <h1 class="hero-title">歡迎來到遊戲中心</h1>
+            <p style="color: var(--on-surface-variant); font-size: 1.1rem;">探索一系列由 Eric 開發的互動挑戰</p>
+
+            <div class="game-grid">
+                <!-- 太空模擬卡片 -->
+                <a href="太空模擬.html" target="_blank" class="game-card">
+                    <div class="card-banner" style="background: linear-gradient(135deg, #e8f0fe, #d2e3fc);">
+                        🪐
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">太空引力模擬</div>
+                        <p class="card-desc">探索星系演化的奧秘。模擬太陽系運動或自定義物理，觀察重力如何塑造宇宙。</p>
+                    </div>
+                </a>
+
+                <!-- 數獨卡片 -->
+                <a href="數獨.html" target="_blank" class="game-card">
+                    <div class="card-banner" style="background: linear-gradient(135deg, #e6fffa, #b2f5ea);">
+                        🔢
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title" style="font-family: 'Press Start 2P', cursive; font-size: 0.9rem; color: #00897b;">數獨 Pro+</div>
+                        <p class="card-desc" style="margin-top: 10px;">經典的像素風格謎題挑戰。擁有自動存檔功能，鍛鍊您的腦力極限。</p>
+                    </div>
+                </a>
+
+                <!-- 沙盒卡片 -->
+                <a href="https://sites.google.com/view/erichunggames/%E6%B2%99%E7%9B%92" target="_blank" class="game-card">
+                    <div class="card-banner" style="background: linear-gradient(135deg, #fff7e6, #ffe8cc);">
+                        🏖️
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">物理沙盒</div>
+                        <p class="card-desc">創意與科學的結合。在開放環境中實驗各種物質交互作用，創造你的物理世界。</p>
+                    </div>
+                </a>
+
+                <!-- 象棋卡片 -->
+                <a href="https://sites.google.com/view/erichunggames/%E8%B1%A1%E6%A3%8B" target="_blank" class="game-card">
+                    <div class="card-banner" style="background: linear-gradient(135deg, #fce4ec, #f8bbd0);">
+                        <span style="font-family: 'Noto Serif TC', serif; font-size: 3.5rem; color: #c62828; border: 4px solid #c62828; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; background: #fff;">帥</span>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">經典象棋</div>
+                        <p class="card-desc">運籌帷幄，決勝千里。體驗傳統東方智慧的對弈，在方寸之間展現你的策略思維。</p>
+                    </div>
+                </a>
+            </div>
+
+            <div class="footer">
+                &copy; 2024 70804 Eric. 享受您的遊戲時光。
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
+
