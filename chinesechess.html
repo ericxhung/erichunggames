@@ -16,6 +16,22 @@
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen">
 
+			<div id="nav-container"></div>
+
+    <div id="content-area">
+        </div>
+
+    <script>
+        fetch('nav.html')
+            .then(response => {
+                if (!response.ok) throw new Error('無法讀取 nav.html');
+                return response.text();
+            })
+            .then(data => {
+                document.getElementById('nav-container').innerHTML = data;
+            })
+            .catch(err => console.error('載入頁首失敗:', err));
+    </script>
     <!-- 模式選擇 (主選單) -->
     <div id="home-screen" class="fixed inset-0 z-50 wood-panel flex flex-col items-center justify-center p-6 text-center overflow-y-auto">
         <h1 class="text-5xl font-bold text-amber-950 mb-2 drop-shadow-md">象棋大師</h1>
