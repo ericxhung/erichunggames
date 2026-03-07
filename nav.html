@@ -1,5 +1,8 @@
 <style>
-    /* 導覽列專用 CSS */
+    /* 清除 iframe 內的預設邊界 */
+    body { margin: 0; padding: 0; overflow: hidden; }
+    
+    /* 你的導覽列樣式 */
     nav {
         background: rgba(255, 255, 255, 0.8);
         backdrop-filter: blur(12px);
@@ -14,39 +17,29 @@
         z-index: 1000;
         justify-content: space-between;
         box-shadow: 0 1px 2px rgba(60, 64, 67, 0.1);
+        font-family: 'Google Sans', sans-serif;
     }
-
-    .nav-brand { font-weight: 700; font-size: 1.25rem; color: #1a73e8; text-decoration: none; letter-spacing: -0.5px; }
-
+    .nav-brand { font-weight: 700; font-size: 1.25rem; color: #1a73e8; text-decoration: none; }
     .nav-links { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
-    .nav-links::-webkit-scrollbar { display: none; }
-
     .nav-btn {
         padding: 8px 14px;
         border-radius: 24px;
         text-decoration: none;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         font-size: 0.85rem;
-        background: transparent;
-        border: 1px solid transparent;
         color: #5f6368;
         font-weight: 500;
         white-space: nowrap;
     }
-
     .nav-btn:hover { background: #f1f3f4; color: #202124; }
-    .nav-btn.active { background: #e8f0fe; color: #1a73e8; }
-
-    @media (max-width: 640px) { .nav-brand { font-size: 1.1rem; } }
 </style>
 
 <nav>
-    <a href="index.html" class="nav-brand">ERIC GAMES</a>
+    <a href="index.html" class="nav-brand" target="_top">ERIC GAMES</a>
     <div class="nav-links">
-        <a href="index.html" class="nav-btn">首頁</a>
-        <a href="space.html" class="nav-btn">太空模擬</a>
-        <a href="sudoku.html" class="nav-btn">數獨 Pro+</a>
-        <a href="sandbox.html" class="nav-btn">沙盒</a>
-        <a href="chinesechess.html" class="nav-btn">象棋</a>
+        <a href="index.html" class="nav-btn" target="_top">首頁</a>
+        <a href="space.html" class="nav-btn" target="_blank">太空模擬</a>
+        <a href="sudoku.html" class="nav-btn" target="_blank">數獨 Pro+</a>
+        <a href="sandbox.html" class="nav-btn" target="_blank">沙盒</a>
+        <a href="chinesechess.html" class="nav-btn" target="_blank">象棋</a>
     </div>
 </nav>
