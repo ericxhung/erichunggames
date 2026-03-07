@@ -1,332 +1,547 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="dark">
+<html lang="zh-TW" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Global Sandbox - Engineering Refactor</title>
+    <title>Botany Sandbox - Engineered Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
     <style>
-        body { margin: 0; overflow: hidden; touch-action: none; user-select: none; background: #020617; font-family: ui-monospace, 'Cascadia Code', monospace; }
-        canvas { display: block; image-rendering: pixelated; background: #000; cursor: crosshair; }
-        .glass-panel { backdrop-filter: blur(16px); background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255,255,255,0.1); }
-        
-        /* 太平洋中心導航器 */
-        .earth-navigator { position: relative; width: 300px; height: 180px; cursor: grab; }
-        .pixel-map-container { 
-            position: absolute; width: 100%; height: 100%; border-radius: 24px; overflow: hidden; 
-            background: #0f172a; border: 2px solid rgba(255,255,255,0.1);
-        }
-        
-        /* 像素地圖 SVG 渲染 (太平洋中心) */
-        .pixel-map-layer { 
-            position: absolute; width: 200%; height: 100%; 
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="180" viewBox="0 0 600 180"><g fill="%234ade80" opacity="0.8"><!-- 亞洲與大洋洲 --><path d="M40,50 h30 v20 h20 v30 h-20 v20 h-30 Z M80,120 h20 v20 h-20 Z M100,100 h15 v15 h-15 Z"/><!-- 澳洲 --><path d="M120,130 h30 v20 h-30 Z"/><!-- 美洲 --><path d="M480,40 h40 v30 h-20 v50 h30 v40 h-40 v-30 h-10 v-60 h-10 Z"/><path d="M0,80 h10 v20 h-10 Z"/></g></svg>');
-            background-size: 50% 100%; background-repeat: repeat-x;
-        }
-
-        .region-marker { 
-            position: absolute; padding: 4px 8px; background: rgba(59, 130, 246, 0.5); 
-            border: 1px solid #60a5fa; border-radius: 6px; font-size: 10px; color: white;
-            transform: translate(-50%, -50%); transition: all 0.2s; pointer-events: auto;
-        }
-        .region-marker:hover { background: #3b82f6; transform: translate(-50%, -55%) scale(1.1); }
-        
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        body { margin: 0; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; font-family: ui-sans-serif, system-ui, sans-serif; }
+        canvas { display: block; image-rendering: pixelated; }
+        .glass-panel { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: all 0.3s ease; }
+        .light .glass-panel { background: rgba(255, 255, 255, 0.9); border-bottom: 1px solid rgba(0,0,0,0.1); color: #1e293b; }
+        .dark .glass-panel { background: rgba(15, 23, 42, 0.9); border-bottom: 1px solid rgba(255,255,255,0.1); color: #f8fafc; }
+        .active-tool { box-shadow: 0 0 0 2px #3b82f6; transform: scale(1.05); background: #3b82f6 !important; color: white !important; }
+        .scroll-hide::-webkit-scrollbar { display: none; }
+        input[type="range"] { -webkit-appearance: none; height: 4px; border-radius: 2px; background: #cbd5e1; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: #3b82f6; border-radius: 50%; border: 2px solid white; cursor: pointer; }
     </style>
 </head>
-<body class="flex flex-col h-screen">
+<body class="flex flex-col h-screen fixed inset-0 bg-slate-50 dark:bg-slate-950">
 
-    <!-- 全球導航覆蓋層 -->
-    <div id="navOverlay" class="fixed inset-0 z-[100] bg-slate-950/90 flex flex-col items-center justify-center p-6 transition-opacity duration-500">
-        <div class="text-center mb-6">
-            <h2 class="text-2xl font-black italic tracking-tighter text-white uppercase">Pacific_Sandbox_v2</h2>
-            <div class="h-1 w-16 bg-blue-500 mx-auto mt-2"></div>
-        </div>
-
-        <div class="earth-navigator" id="mapViewport">
-            <div class="pixel-map-container">
-                <div style="position:absolute; inset:0; background: radial-gradient(circle, #1e3a8a 0%, #0f172a 100%);"></div>
-                <div style="position:absolute; inset:0; opacity:0.05; background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 20px 20px;"></div>
-                <div id="mapMovingLayer" class="pixel-map-layer"></div>
-            </div>
-            <div id="markerBox" class="absolute inset-0 pointer-events-none"></div>
-        </div>
-
-        <p class="text-slate-500 text-[10px] mt-6 max-w-xs text-center font-mono">
-            請選擇一個區域來初始化物理沙盒環境。地圖已根據 150°E 太平洋中心投影校準。
-        </p>
-    </div>
-
-    <!-- 頂部標題與工具 -->
-    <div class="glass-panel p-4 shrink-0 z-20 flex items-center justify-between border-b">
-        <div class="flex items-center gap-3">
-            <button onclick="openNav()" class="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-xl border border-white/10">🗺️</button>
+    <!-- 頂部資訊與控制 -->
+    <div class="glass-panel p-3 shrink-0 z-20">
+        <div class="flex items-center justify-between mb-2">
             <div>
-                <h1 class="font-bold text-white text-xs tracking-widest uppercase" id="regionTitle">未載入區域</h1>
-                <div class="flex gap-2 text-[8px] text-slate-500 font-mono mt-0.5">
-                    <span>PHYS_CORE: ACTIVE</span>
-                    <span>FPS: <b id="fpsCounter">60</b></span>
+                <h1 class="font-black text-blue-600 dark:text-blue-400 text-sm tracking-tighter italic uppercase">Engineered Sandbox v10.3</h1>
+                <div class="flex gap-2 text-[10px] text-gray-400 font-mono">
+                    FPS: <span id="fpsCounter">0</span> | OBJ: <span id="particleCount">0</span>
                 </div>
-            </div>
-        </div>
-        <div id="brushToolbar" class="flex gap-1 overflow-x-auto no-scrollbar max-w-[40vw]"></div>
-    </div>
-
-    <!-- 物理畫布區 -->
-    <div class="flex-grow relative touch-none bg-black" id="simContainer">
-        <canvas id="simCanvas"></canvas>
-    </div>
-
-    <!-- 底部控制面板 -->
-    <div class="glass-panel p-4 shrink-0 flex flex-col gap-3 border-t">
-        <div class="flex items-center gap-4">
-            <div class="flex-1">
-                <div class="flex justify-between text-[9px] font-bold text-slate-400 mb-1 uppercase tracking-widest">
-                    <span>筆刷大小</span>
-                    <span id="brushSizeTxt" class="text-blue-400">8</span>
-                </div>
-                <input type="range" id="brushInput" min="1" max="40" value="8" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500">
             </div>
             <div class="flex gap-2">
-                <button id="btnDraw" class="w-12 h-12 flex items-center justify-center bg-blue-600 rounded-xl shadow-lg ring-2 ring-blue-400/20 active:scale-90 transition-transform">✏️</button>
-                <button id="btnErase" class="w-12 h-12 flex items-center justify-center bg-slate-800 rounded-xl active:scale-90 transition-transform">🧹</button>
-                <button onclick="clearCanvas()" class="w-12 h-12 flex items-center justify-center bg-red-900/30 text-red-400 rounded-xl border border-red-500/20 active:scale-90 transition-transform">重置</button>
+                <button id="themeToggle" class="p-2 bg-slate-200 dark:bg-slate-800 rounded-full">🌓</button>
+                <button id="clearBtn" class="px-3 py-1 bg-red-500 text-white rounded text-[10px] font-bold">RESET</button>
             </div>
         </div>
+        
+        <!-- 筆刷與速度控制 -->
+        <div class="grid grid-cols-2 gap-4 mb-3">
+            <div class="space-y-1">
+                <div class="flex justify-between text-[10px] font-bold uppercase text-slate-400">
+                    <span>Brush Size</span>
+                    <span id="brushSizeVal">8</span>
+                </div>
+                <input type="range" id="brushSlider" min="1" max="40" value="8" class="w-full">
+            </div>
+            <div class="space-y-1">
+                <div class="flex justify-between text-[10px] font-bold uppercase text-slate-400">
+                    <span>Sim Speed</span>
+                    <span id="speedVal">1.0x</span>
+                </div>
+                <input type="range" id="speedSlider" min="0" max="3" step="0.1" value="1" class="w-full">
+            </div>
+        </div>
+        
+        <!-- 材質列 -->
+        <div id="toolbar" class="flex gap-2 overflow-x-auto pb-2 scroll-hide"></div>
+    </div>
+
+    <!-- 主畫布 -->
+    <div class="flex-grow relative touch-none" id="canvasContainer">
+        <canvas id="sandboxCanvas"></canvas>
+    </div>
+
+    <!-- 模式切換 -->
+    <div class="glass-panel p-4 flex gap-3 border-t border-slate-200 dark:border-slate-800 shrink-0">
+        <button id="modeBuild" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-lg active:scale-95 transition-transform">建造模式</button>
+        <button id="modeErase" class="flex-1 py-3 bg-slate-200 dark:bg-slate-800 text-slate-500 rounded-xl font-bold text-sm active:scale-95 transition-transform">橡皮擦</button>
     </div>
 
     <script>
-        // 核心物理常數
-        const GRID_SIZE = 4;
-        const MATERIALS = {
-            EMPTY: 0, STONE: 1, SAND: 2, WATER: 3, LAVA: 4, GAS: 5, ACID: 6, DIRT: 7
+        /**
+         * 1. 核心定義區
+         */
+        const TICK_SIZE = 4;
+        const MAT = {
+            EMPTY: 0, SAND: 1, WATER: 2, STONE: 3, 
+            WOOD: 4, PLANT: 5, SEED: 6, FIRE: 7, 
+            OIL: 8, LAVA: 9, ACID: 10, CLONER: 11
         };
 
-        const PROPS = {
-            [MATERIALS.EMPTY]: { name: '空氣', color: '#000', density: 0 },
-            [MATERIALS.STONE]: { name: '岩石', color: '#4b5563', density: 100, immovable: true },
-            [MATERIALS.SAND]: { name: '沙子', color: '#d97706', density: 50 },
-            [MATERIALS.WATER]: { name: '水', color: '#2563eb', density: 10, liquid: true },
-            [MATERIALS.LAVA]: { name: '熔岩', color: '#dc2626', density: 20, liquid: true, heat: true },
-            [MATERIALS.GAS]: { name: '蒸氣', color: '#94a3b8', density: -1 },
-            [MATERIALS.ACID]: { name: '強酸', color: '#84cc16', density: 15, liquid: true, corrosive: true },
-            [MATERIALS.DIRT]: { name: '泥土', color: '#78350f', density: 45 }
+        const MATERIALS_CONFIG = {
+            [MAT.EMPTY]: { name: '空氣', color: '#000000', type: 'gas' },
+            [MAT.SAND]:  { name: '沙子', color: '#facc15', type: 'powder', density: 1.5 },
+            [MAT.WATER]: { name: '流水', color: '#3b82f6', type: 'liquid', density: 1.0, flow: 5 },
+            [MAT.STONE]: { name: '石頭', color: '#64748b', type: 'solid', immovable: true },
+            [MAT.WOOD]:  { name: '木頭', color: '#78350f', type: 'solid', immovable: true },
+            [MAT.PLANT]: { name: '植物', color: '#22c55e', type: 'solid', immovable: true },
+            [MAT.SEED]:  { name: '種子', color: '#fbbf24', type: 'powder', density: 0.9 },
+            [MAT.FIRE]:  { name: '火焰', color: '#ef4444', type: 'gas', lifetime: 50 },
+            [MAT.OIL]:   { name: '石油', color: '#44403c', type: 'liquid', density: 0.8, flow: 4 },
+            [MAT.LAVA]:  { name: '岩漿', color: '#f97316', type: 'liquid', density: 2.5, flow: 2 },
+            [MAT.ACID]:  { name: '強酸', color: '#a3e635', type: 'liquid', density: 1.2, flow: 3 },
+            [MAT.CLONER]:{ name: '克隆', color: '#ec4899', type: 'solid', immovable: true }
         };
 
-        const REGIONS = [
-            { id: 'asia', name: '東亞板塊', lon: -30, lat: 30, preset: 'mountain' },
-            { id: 'pacific', name: '太平洋群島', lon: 10, lat: 0, preset: 'island' },
-            { id: 'america', name: '美洲海岸', lon: 100, lat: 20, preset: 'cliff' }
-        ];
+        /**
+         * 2. 狀態變數
+         */
+        let canvas, ctx, container;
+        let width, height, cols, rows;
+        let grid, nextGrid, modified, wetness;
+        let selectedMaterial = MAT.SAND, brushSize = 8, simSpeed = 1.0;
+        let isEraser = false, isDrawing = false, pointerX = -1, pointerY = -1, lastX = -1, lastY = -1;
+        let frameAcc = 0;
 
-        let canvas, ctx, grid, nextGrid, width, height, cols, rows;
-        let selectedMat = MATERIALS.SAND, brushSize = 8, isDrawing = false, isEraser = false;
-        let mapRotation = 0, isDraggingMap = false, mapLastX = 0;
-
-        // 初始化導航地圖
-        function initMap() {
-            const movingLayer = document.getElementById('mapMovingLayer');
-            const markerBox = document.getElementById('markerBox');
-            
-            REGIONS.forEach(reg => {
-                const btn = document.createElement('div');
-                btn.className = 'region-marker';
-                btn.innerText = reg.name;
-                btn.onclick = (e) => { e.stopPropagation(); loadRegion(reg); };
-                markerBox.appendChild(btn);
-                reg.element = btn;
-            });
-
-            const updatePos = () => {
-                movingLayer.style.transform = `translateX(${(mapRotation % 300)}px)`;
-                REGIONS.forEach(reg => {
-                    let visualX = (reg.lon + (mapRotation/300)*360) % 360;
-                    if (visualX < -180) visualX += 360;
-                    if (visualX > 180) visualX -= 360;
-                    
-                    if (Math.abs(visualX) < 80) {
-                        reg.element.style.display = 'block';
-                        reg.element.style.left = `${150 + (visualX/80) * 140}px`;
-                        reg.element.style.top = `${90 - (reg.lat/60) * 70}px`;
-                        reg.element.style.opacity = 1 - Math.abs(visualX/80);
-                    } else {
-                        reg.element.style.display = 'none';
-                    }
-                });
-            };
-
-            const vp = document.getElementById('mapViewport');
-            const start = (e) => { isDraggingMap = true; mapLastX = e.clientX || e.touches[0].clientX; };
-            const move = (e) => {
-                if (!isDraggingMap) return;
-                const x = e.clientX || e.touches?.[0].clientX;
-                mapRotation += (x - mapLastX) * 0.8;
-                mapLastX = x;
-                updatePos();
-            };
-            vp.onmousedown = start; vp.ontouchstart = start;
-            window.onmousemove = move; window.ontouchmove = move;
-            window.onmouseup = window.ontouchend = () => isDraggingMap = false;
-            
-            updatePos();
-        }
-
-        function loadRegion(reg) {
-            document.getElementById('navOverlay').style.opacity = '0';
-            setTimeout(() => document.getElementById('navOverlay').classList.add('hidden'), 500);
-            document.getElementById('regionTitle').innerText = reg.name;
-            clearCanvas();
-            
-            // 預設地形生成 (工程模擬)
-            for(let x=0; x<cols; x++) {
-                let h = rows - 25;
-                if(reg.preset === 'mountain') h -= Math.sin(x*0.1)*20 + Math.random()*5;
-                if(reg.preset === 'cliff') h -= (x > cols/2) ? 40 : 5;
-                if(reg.preset === 'island') h -= (x > cols*0.3 && x < cols*0.7) ? 20 : -10;
-                
-                for(let y=Math.floor(h); y<rows; y++) {
-                    grid[y*cols+x] = (y < h+4) ? MATERIALS.DIRT : MATERIALS.STONE;
-                }
-            }
-        }
-
-        function openNav() {
-            document.getElementById('navOverlay').classList.remove('hidden');
-            setTimeout(() => document.getElementById('navOverlay').style.opacity = '1', 10);
-        }
-
-        // 初始化沙盒
-        function initSandbox() {
-            canvas = document.getElementById('simCanvas');
+        /**
+         * 3. 初始化
+         */
+        function init() {
+            canvas = document.getElementById('sandboxCanvas');
             ctx = canvas.getContext('2d', { alpha: false });
-            const container = document.getElementById('simContainer');
+            container = document.getElementById('canvasContainer');
+            
+            setupDimensions();
+            createToolbar();
+            bindEvents();
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function setupDimensions() {
             width = container.clientWidth;
             height = container.clientHeight;
             canvas.width = width;
             canvas.height = height;
-            cols = Math.floor(width / GRID_SIZE);
-            rows = Math.floor(height / GRID_SIZE);
-            grid = new Uint8Array(cols * rows);
-            nextGrid = new Uint8Array(cols * rows);
-
-            const toolbar = document.getElementById('brushToolbar');
-            Object.entries(PROPS).forEach(([id, p]) => {
-                if (id == 0) return;
-                const b = document.createElement('button');
-                b.className = "px-3 py-1.5 bg-slate-800 border border-white/5 rounded-lg text-[10px] text-slate-300 whitespace-nowrap active:bg-blue-600";
-                b.innerText = p.name;
-                b.onclick = () => { selectedMat = parseInt(id); isEraser = false; };
-                toolbar.appendChild(b);
-            });
-
-            bindEvents();
-            requestAnimationFrame(tick);
-        }
-
-        function bindEvents() {
-            const handleInput = (e) => {
-                if(!isDrawing) return;
-                const rect = canvas.getBoundingClientRect();
-                const x = (e.clientX || e.touches?.[0].clientX) - rect.left;
-                const y = (e.clientY || e.touches?.[0].clientY) - rect.top;
-                const cx = Math.floor(x / GRID_SIZE);
-                const cy = Math.floor(y / GRID_SIZE);
-                
-                for(let i=-brushSize; i<=brushSize; i++) {
-                    for(let j=-brushSize; j<=brushSize; j++) {
-                        if(i*i+j*j <= brushSize*brushSize) {
-                            const tx = cx+i, ty = cy+j;
-                            if(tx>=0 && tx<cols && ty>=0 && ty<rows) {
-                                if(isEraser) grid[ty*cols+tx] = MATERIALS.EMPTY;
-                                else if(grid[ty*cols+tx] === MATERIALS.EMPTY) grid[ty*cols+tx] = selectedMat;
-                            }
-                        }
-                    }
-                }
-            };
-            canvas.onpointerdown = (e) => { isDrawing = true; handleInput(e); };
-            window.onpointermove = handleInput;
-            window.onpointerup = () => isDrawing = false;
+            cols = Math.floor(width / TICK_SIZE);
+            rows = Math.floor(height / TICK_SIZE);
             
-            document.getElementById('brushInput').oninput = (e) => {
-                brushSize = parseInt(e.target.value);
-                document.getElementById('brushSizeTxt').innerText = brushSize;
-            };
-            document.getElementById('btnDraw').onclick = () => isEraser = false;
-            document.getElementById('btnErase').onclick = () => isEraser = true;
+            grid = Array.from({ length: cols }, () => new Uint8Array(rows));
+            nextGrid = Array.from({ length: cols }, () => new Uint8Array(rows));
+            modified = Array.from({ length: cols }, () => new Uint8Array(rows));
+            wetness = Array.from({ length: cols }, () => new Uint8Array(rows));
+            
+            for(let x=0; x<cols; x++) grid[x][rows-1] = MAT.STONE;
+            for(let y=0; y<rows; y++) { grid[0][y] = MAT.STONE; grid[cols-1][y] = MAT.STONE; }
         }
 
-        function clearCanvas() { grid.fill(0); }
+        function createToolbar() {
+            const toolbar = document.getElementById('toolbar');
+            Object.keys(MATERIALS_CONFIG).forEach(id => {
+                const matId = parseInt(id);
+                if (matId === MAT.EMPTY) return;
+                const btn = document.createElement('button');
+                btn.className = `shrink-0 px-4 py-2 rounded-lg border text-xs font-bold transition-all bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500`;
+                btn.innerText = MATERIALS_CONFIG[matId].name;
+                btn.onclick = () => { selectedMaterial = matId; isEraser = false; updateUI(); };
+                btn.dataset.id = matId;
+                toolbar.appendChild(btn);
+            });
+            updateUI();
+        }
 
-        function tick() {
-            nextGrid.set(grid);
-            for(let y=rows-1; y>=0; y--) {
-                for(let x=0; x<cols; x++) {
-                    const idx = y*cols+x;
-                    const mat = grid[idx];
-                    if (mat === MATERIALS.EMPTY || PROPS[mat].immovable) continue;
+        /**
+         * 4. 核心模擬循環
+         */
+        function updatePhysics() {
+            if (isDrawing) {
+                applyBrush(pointerX, pointerY, lastX, lastY);
+                lastX = pointerX;
+                lastY = pointerY;
+            }
 
-                    const p = PROPS[mat];
-                    let dy = p.density > 0 ? 1 : -1;
-                    let targetY = y + dy;
+            for (let i = 0; i < cols; i++) {
+                nextGrid[i].set(grid[i]);
+                modified[i].fill(0);
+            }
 
-                    if (targetY >= 0 && targetY < rows) {
-                        const downIdx = targetY * cols + x;
-                        const below = grid[downIdx];
-                        
-                        // 1. 垂直位移 (重力或浮力)
-                        if (PROPS[below].density < p.density) {
-                            nextGrid[idx] = nextGrid[downIdx];
-                            nextGrid[downIdx] = mat;
-                        } 
-                        // 2. 對角線位移 (堆疊)
-                        else {
-                            let dir = Math.random() < 0.5 ? 1 : -1;
-                            const diagIdx = targetY * cols + (x + dir);
-                            if (x + dir >= 0 && x + dir < cols && PROPS[grid[diagIdx]].density < p.density) {
-                                nextGrid[idx] = nextGrid[diagIdx];
-                                nextGrid[diagIdx] = mat;
-                            }
-                            // 3. 水平流動 (液體)
-                            else if (p.liquid) {
-                                const sideIdx = y * cols + (x + dir);
-                                if (x + dir >= 0 && x + dir < cols && PROPS[grid[sideIdx]].density < p.density) {
-                                    nextGrid[idx] = nextGrid[sideIdx];
-                                    nextGrid[sideIdx] = mat;
+            for (let y = rows - 2; y >= 1; y--) {
+                const shuffleX = Math.random() < 0.5;
+                for (let i = 1; i < cols - 1; i++) {
+                    const x = shuffleX ? i : cols - 1 - i;
+                    const state = grid[x][y];
+                    if (state === MAT.EMPTY || modified[x][y]) continue;
+
+                    const config = MATERIALS_CONFIG[state];
+
+                    switch(state) {
+                        case MAT.WATER: spreadWetness(x, y); break;
+                        case MAT.SEED:  handleSeed(x, y); break;
+                        case MAT.PLANT: handlePlant(x, y); break;
+                        case MAT.FIRE:  handleFire(x, y); continue;
+                        case MAT.LAVA:  handleLava(x, y); break;
+                        case MAT.ACID:  handleAcid(x, y); break;
+                        case MAT.CLONER: handleCloner(x, y); continue;
+                    }
+
+                    if (config.immovable) continue;
+
+                    let moved = false;
+                    const below = grid[x][y+1];
+                    const belowConfig = MATERIALS_CONFIG[below];
+
+                    if (below === MAT.EMPTY || (belowConfig.type === 'liquid' && config.density > belowConfig.density)) {
+                        if (moveParticle(x, y, x, y + 1)) moved = true;
+                    }
+
+                    if (!moved && (config.type === 'powder' || config.type === 'liquid')) {
+                        let side = Math.random() < 0.5 ? 1 : -1;
+                        for (let s of [side, -side]) {
+                            const nx = x + s;
+                            if (nx > 0 && nx < cols - 1) {
+                                const target = grid[nx][y+1];
+                                const targetConfig = MATERIALS_CONFIG[target];
+                                if (target === MAT.EMPTY || (targetConfig.type === 'liquid' && config.density > targetConfig.density)) {
+                                    if (moveParticle(x, y, nx, y + 1)) { moved = true; break; }
                                 }
                             }
                         }
                     }
 
-                    // 特殊反應 (強酸腐蝕)
-                    if (p.corrosive && Math.random() < 0.05) {
-                        const neighbors = [idx-1, idx+1, idx-cols, idx+cols];
-                        neighbors.forEach(n => {
-                            if (n>=0 && n<grid.length && grid[n] !== MATERIALS.EMPTY && grid[n] !== MATERIALS.ACID) {
-                                if (!PROPS[grid[n]].immovable || Math.random() < 0.1) {
-                                    nextGrid[n] = MATERIALS.EMPTY;
-                                    nextGrid[idx] = MATERIALS.EMPTY;
+                    if (!moved && config.type === 'liquid') {
+                        let side = Math.random() < 0.5 ? 1 : -1;
+                        for (let f = 1; f <= config.flow; f++) {
+                            for (let s of [side, -side]) {
+                                const nx = x + s * f;
+                                if (nx > 0 && nx < cols - 1) {
+                                    if (grid[nx][y] === MAT.EMPTY && grid[nx][y+1] !== MAT.EMPTY) {
+                                        if (moveParticle(x, y, nx, y)) { moved = true; break; }
+                                    }
                                 }
                             }
-                        });
+                            if (moved) break;
+                        }
                     }
                 }
             }
-            grid.set(nextGrid);
-
-            // 渲染
-            ctx.fillStyle = '#020617';
-            ctx.fillRect(0,0,width,height);
-            for(let i=0; i<grid.length; i++) {
-                if(grid[i] !== 0) {
-                    ctx.fillStyle = PROPS[grid[i]].color;
-                    ctx.fillRect((i%cols)*GRID_SIZE, Math.floor(i/cols)*GRID_SIZE, GRID_SIZE, GRID_SIZE);
-                }
-            }
-            requestAnimationFrame(tick);
+            for (let i = 0; i < cols; i++) grid[i].set(nextGrid[i]);
         }
 
-        window.onload = () => { initMap(); initSandbox(); };
+        /**
+         * 5. 植物/種子 工程邏輯更新版
+         */
+        function handleSeed(x, y) {
+            let hasWater = wetness[x][y] > 10;
+            const ground = grid[x][y+1];
+            const onSolid = (ground !== MAT.EMPTY && ground !== MAT.WATER && ground !== MAT.FIRE);
+
+            if (hasWater && onSolid && Math.random() < 0.05) {
+                nextGrid[x][y] = MAT.PLANT;
+                modified[x][y] = 1;
+                wetness[x][y] = 60;
+            }
+        }
+
+        function handlePlant(x, y) {
+            // A. 毛細作用
+            const dirs = [[0,1],[1,0],[-1,0],[0,-1]];
+            for(let [dx,dy] of dirs) {
+                const nx = x+dx, ny = y+dy;
+                if(grid[nx][ny] === MAT.PLANT) {
+                    const diff = wetness[nx][ny] - wetness[x][y];
+                    if(diff > 1) {
+                        const flow = Math.ceil(diff * 0.3);
+                        wetness[x][y] += flow;
+                        wetness[nx][ny] -= flow;
+                    }
+                }
+            }
+
+            // B. 結構支撐
+            let supports = 0;
+            for(let [dx,dy] of [[0,1],[1,1],[-1,1],[1,0],[-1,0]]) {
+                const nx = x+dx, ny = y+dy;
+                if(grid[nx][ny] !== MAT.EMPTY && grid[nx][ny] !== MAT.WATER && grid[nx][ny] !== MAT.FIRE) {
+                    supports++;
+                }
+            }
+            if (supports === 0 && Math.random() < 0.01) {
+                nextGrid[x][y] = MAT.WOOD;
+                return;
+            }
+
+            // C. 生長優化：穿透種子
+            if (Math.random() < 0.08 && wetness[x][y] > 20) {
+                const growthChoices = [
+                    [0, -1, 45], // 上
+                    [-1, -1, 15], [1, -1, 15],
+                    [-1, 0, 10], [1, 0, 10], [0, 1, 5]
+                ];
+                
+                let totalWeight = growthChoices.reduce((acc, curr) => acc + curr[2], 0);
+                let random = Math.random() * totalWeight;
+                let pick = growthChoices[0];
+                for (let choice of growthChoices) {
+                    if (random < choice[2]) { pick = choice; break; }
+                    random -= choice[2];
+                }
+
+                const nx = x + pick[0], ny = y + pick[1];
+
+                if (nx > 0 && nx < cols-1 && ny > 0 && ny < rows-1) {
+                    // 檢查目標物
+                    const target = grid[nx][ny];
+                    let canGrow = false;
+
+                    // 1. 空氣或沙子直接生長
+                    if (target === MAT.EMPTY || target === MAT.SAND) {
+                        canGrow = true;
+                    } 
+                    // 2. 核心解決方案：如果遇到種子，嘗試將種子「擠開」到上方
+                    else if (target === MAT.SEED) {
+                        const aboveTarget = grid[nx][ny-1];
+                        if (aboveTarget === MAT.EMPTY) {
+                            nextGrid[nx][ny-1] = MAT.SEED; // 向上位移
+                            wetness[nx][ny-1] = wetness[nx][ny];
+                            canGrow = true;
+                        } else {
+                            // 若上方不空，直接覆蓋（植物生命力更強）
+                            canGrow = true;
+                        }
+                    }
+
+                    // 防畸形檢查
+                    let neighborsCount = 0;
+                    for(let ox=-1; ox<=1; ox++) {
+                        for(let oy=-1; oy<=1; oy++) {
+                            if(grid[nx+ox][ny+oy] === MAT.PLANT) neighborsCount++;
+                        }
+                    }
+
+                    if (canGrow && neighborsCount < 2) {
+                        nextGrid[nx][ny] = MAT.PLANT;
+                        modified[nx][ny] = 1;
+                        wetness[nx][ny] = 15;
+                        wetness[x][y] -= 12;
+                    }
+                }
+            }
+            
+            if (wetness[x][y] <= 0 && Math.random() < 0.002) {
+                nextGrid[x][y] = MAT.WOOD;
+            }
+        }
+
+        /**
+         * 6. 其他元素邏輯
+         */
+        function handleFire(x, y) {
+            const neighbors = [[0,1],[0,-1],[1,0],[-1,0]];
+            for(let [dx,dy] of neighbors) {
+                const nx = x+dx, ny = y+dy;
+                const target = grid[nx][ny];
+                if(target === MAT.PLANT || target === MAT.WOOD || target === MAT.OIL) {
+                    if(Math.random() < 0.1) nextGrid[nx][ny] = MAT.FIRE;
+                } else if(target === MAT.WATER) {
+                    nextGrid[x][y] = MAT.EMPTY;
+                    return;
+                }
+            }
+            if(Math.random() < 0.15) nextGrid[x][y] = MAT.EMPTY;
+            else moveParticle(x, y, x + (Math.random() < 0.5 ? 1 : -1), y - 1);
+        }
+
+        function handleCloner(x, y) {
+            const source = grid[x][y+1];
+            if(source !== MAT.EMPTY && source !== MAT.CLONER && source !== MAT.STONE) {
+                if(grid[x-1][y] === MAT.EMPTY) nextGrid[x-1][y] = source;
+                if(grid[x+1][y] === MAT.EMPTY) nextGrid[x+1][y] = source;
+            }
+        }
+
+        function handleLava(x, y) {
+            const neighbors = [[0,1],[0,-1],[1,0],[-1,0]];
+            for(let [dx,dy] of neighbors) {
+                const nx = x+dx, ny = y+dy;
+                if(grid[nx][ny] === MAT.WATER) {
+                    nextGrid[nx][ny] = MAT.STONE;
+                    nextGrid[x][y] = MAT.STONE;
+                }
+            }
+        }
+
+        function handleAcid(x, y) {
+             const neighbors = [[0,1],[0,-1],[1,0],[-1,0]];
+             for(let [dx,dy] of neighbors) {
+                const nx = x+dx, ny = y+dy;
+                const t = grid[nx][ny];
+                if(t !== MAT.EMPTY && t !== MAT.ACID && t !== MAT.STONE) {
+                    if(Math.random() < 0.1) nextGrid[nx][ny] = MAT.EMPTY;
+                }
+             }
+        }
+
+        function spreadWetness(x, y) {
+            const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
+            for(let [dx,dy] of dirs) {
+                const nx = x+dx, ny = y+dy;
+                if(nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
+                    const t = grid[nx][ny];
+                    if(t === MAT.SAND || t === MAT.STONE || t === MAT.PLANT || t === MAT.SEED) {
+                        wetness[nx][ny] = Math.min(100, wetness[nx][ny] + 30);
+                    }
+                }
+            }
+        }
+
+        /**
+         * 7. 輔助函數
+         */
+        function moveParticle(x1, y1, x2, y2) {
+            if (x2 <= 0 || x2 >= cols - 1 || y2 <= 0 || y2 >= rows - 1) return false;
+            if (modified[x1][y1] || modified[x2][y2]) return false;
+            const v1 = grid[x1][y1], v2 = grid[x2][y2];
+            nextGrid[x1][y1] = v2; nextGrid[x2][y2] = v1;
+            modified[x1][y1] = 1; modified[x2][y2] = 1;
+            const w1 = wetness[x1][y1]; wetness[x1][y1] = wetness[x2][y2]; wetness[x2][y2] = w1;
+            return true;
+        }
+
+        function applyBrush(currX, currY, prevX, prevY) {
+            if (currX === -1 || currY === -1) return;
+            const startX = prevX === -1 ? currX : prevX;
+            const startY = prevY === -1 ? currY : prevY;
+
+            interpolateLine(startX, startY, currX, currY, (ix, iy) => {
+                const radius = Math.floor(brushSize / 2);
+                for(let i=-radius; i<=radius; i++) {
+                    for(let j=-radius; j<=radius; j++) {
+                        if(i*i + j*j <= radius*radius) {
+                            const nx = ix+i, ny = iy+j;
+                            if(nx > 0 && nx < cols-1 && ny > 0 && ny < rows-1) {
+                                const m = isEraser ? MAT.EMPTY : selectedMaterial;
+                                grid[nx][ny] = m;
+                                nextGrid[nx][ny] = m;
+                                wetness[nx][ny] = (m === MAT.WATER) ? 100 : 0;
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function draw() {
+            const isDark = document.documentElement.classList.contains('dark');
+            ctx.fillStyle = isDark ? '#020617' : '#f8fafc';
+            ctx.fillRect(0, 0, width, height);
+            let count = 0;
+            for (let i = 0; i < cols; i++) {
+                for (let j = 0; j < rows; j++) {
+                    const s = grid[i][j];
+                    if (s === MAT.EMPTY) continue;
+                    count++;
+                    const config = MATERIALS_CONFIG[s];
+                    let color = config.color;
+                    if (wetness[i][j] > 0 && [MAT.SAND, MAT.STONE, MAT.PLANT, MAT.SEED].includes(s)) {
+                        const intensity = Math.min(0.4, wetness[i][j] / 100);
+                        color = lerpColor(color, '#1e3a8a', intensity);
+                    }
+                    ctx.fillStyle = color;
+                    ctx.fillRect(i * TICK_SIZE, j * TICK_SIZE, TICK_SIZE, TICK_SIZE);
+                }
+            }
+            document.getElementById('particleCount').innerText = count;
+        }
+
+        function lerpColor(a, b, amount) {
+            const ah = parseInt(a.replace(/#/g, ''), 16), ar = ah >> 16, ag = (ah >> 8) & 0xff, ab = ah & 0xff,
+                bh = parseInt(b.replace(/#/g, ''), 16), br = bh >> 16, bg = (bh >> 8) & 0xff, bb = bh & 0xff;
+            const rr = ar + amount * (br - ar), rg = ag + amount * (bg - ag), rb = ab + amount * (bb - ab);
+            return '#' + ((1 << 24) + (Math.round(rr) << 16) + (Math.round(rg) << 8) + Math.round(rb)).toString(16).slice(1);
+        }
+
+        /**
+         * 8. 互動綁定
+         */
+        function bindEvents() {
+            const updatePointer = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const cx = e.clientX || (e.touches && e.touches[0].clientX);
+                const cy = e.clientY || (e.touches && e.touches[0].clientY);
+                pointerX = Math.floor((cx - rect.left) / TICK_SIZE);
+                pointerY = Math.floor((cy - rect.top) / TICK_SIZE);
+            };
+
+            canvas.addEventListener('mousedown', (e) => { 
+                isDrawing = true; 
+                updatePointer(e);
+                lastX = pointerX; lastY = pointerY;
+                applyBrush(pointerX, pointerY, -1, -1); 
+            });
+            window.addEventListener('mousemove', (e) => { if(isDrawing) updatePointer(e); });
+            window.addEventListener('mouseup', () => { isDrawing = false; pointerX = -1; pointerY = -1; lastX = -1; lastY = -1; });
+            
+            canvas.addEventListener('touchstart', (e) => { 
+                e.preventDefault(); 
+                isDrawing = true; 
+                updatePointer(e);
+                lastX = pointerX; lastY = pointerY;
+                applyBrush(pointerX, pointerY, -1, -1);
+            }, {passive:false});
+            window.addEventListener('touchmove', (e) => { if(isDrawing) updatePointer(e); }, {passive:false});
+            window.addEventListener('touchend', () => { isDrawing = false; pointerX = -1; pointerY = -1; lastX = -1; lastY = -1; });
+
+            document.getElementById('brushSlider').oninput = (e) => {
+                brushSize = parseInt(e.target.value);
+                document.getElementById('brushSizeVal').innerText = brushSize;
+            };
+            document.getElementById('speedSlider').oninput = (e) => {
+                simSpeed = parseFloat(e.target.value);
+                document.getElementById('speedVal').innerText = simSpeed.toFixed(1) + 'x';
+            };
+            document.getElementById('modeBuild').onclick = () => { isEraser = false; updateUI(); };
+            document.getElementById('modeErase').onclick = () => { isEraser = true; updateUI(); };
+            document.getElementById('themeToggle').onclick = () => { document.documentElement.classList.toggle('dark'); };
+            document.getElementById('clearBtn').onclick = () => setupDimensions();
+        }
+
+        function interpolateLine(x0, y0, x1, y1, callback) {
+            let dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
+            let sx = (x0 < x1) ? 1 : -1, sy = (y0 < y1) ? 1 : -1;
+            let err = dx - dy;
+            while (true) {
+                callback(x0, y0);
+                if (x0 === x1 && y0 === y1) break;
+                let e2 = 2 * err;
+                if (e2 > -dy) { err -= dy; x0 += sx; }
+                if (e2 < dx) { err += dx; y0 += sy; }
+            }
+        }
+
+        function updateUI() {
+            document.querySelectorAll('#toolbar button').forEach(btn => {
+                btn.classList.toggle('active-tool', parseInt(btn.dataset.id) === selectedMaterial && !isEraser);
+            });
+            document.getElementById('modeBuild').className = `flex-1 py-3 rounded-xl font-bold text-sm shadow-lg active:scale-95 transition-transform ${!isEraser ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}`;
+            document.getElementById('modeErase').className = `flex-1 py-3 rounded-xl font-bold text-sm shadow-lg active:scale-95 transition-transform ${isEraser ? 'bg-red-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}`;
+        }
+
+        let lastFrame = 0;
+        function gameLoop(time) {
+            const dt = time - lastFrame;
+            lastFrame = time;
+            document.getElementById('fpsCounter').innerText = Math.round(1000/dt);
+            if (simSpeed > 0) {
+                frameAcc += simSpeed;
+                while(frameAcc >= 1) { updatePhysics(); frameAcc--; }
+            }
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        window.onload = init;
     </script>
 </body>
 </html>
