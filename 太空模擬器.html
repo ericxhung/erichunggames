@@ -510,4 +510,152 @@ function handleEnd() {
     touchRing.style.display = 'none';
 }
 
-canvas.addEventListener('mousedo
+canvas.addEventListener('mousedown', e => {
+    if (e.button === 2) { 
+        const wx = (e.clientX - offsetX) / zoom;
+        const wy = (e.clientY - offsetY) / zoom;
+        const target = bodies.find(b => Math.sqrt((b.x-wx)**2 + (b.y-wy)**2) < b.radius + 35/zoom);
+        lastInteractionPos = { x: e.clientX, y: e.clientY };
+        showContextMenu(e.clientX, e.clientY, target);
+        e.preventDefault();
+    } else {
+        handlePress(e.clientX, e.clientY, false);
+    }
+});
+canvas.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+canvas.addEventListener('mouseup', handleEnd);
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+        handlePress(e.touches[0].clientX, e.touches[0].clientY, true);
+    } else if (e.touches.length === 2) {
+        handleEnd();
+        lastPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+        handleMove(e.touches[0].clientX, e.touches[0].clientY);
+    } else if (e.touches.length === 2) {
+        const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        const scale = dist / lastPinchDist;
+        const wx = (midX - offsetX) / zoom;
+        const wy = (midY - offsetY) / zoom;
+        zoom = Math.min(Math.max(zoom * scale, 0.01), 30);
+        offsetX = midX - wx * zoom;
+        offsetY = midY - wy * zoom;
+        lastPinchDist = dist;
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchend', handleEnd);
+
+// --- UI 輔助函數 ---
+function updateAddRadius() {
+    const mass = parseFloat(document.getElementById('add-mass').value) || 0;
+    const radiusInput = document.getElementById('add-radius');
+    // 自動計算建議半徑
+    const suggestedRadius = Math.max(5, Math.pow(mass / 100, 1/3) * 10);
+    radiusInput.value = Math.round(suggestedRadius);
+}
+
+function showContextMenu(x, y, target) {
+    const menu = document.getElementById('context-menu');
+    menu.style.display = 'block';
+    backdrop.style.display = 'block';
+    
+    if (isTouchMode) {
+        document.body.classList.add('mobile-context-active');
+    } else {
+        document.body.classList.remove('mobile-context-active');
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        menu.style.transform = 'none';
+    }
+    
+    currentContextTarget = target;
+    if (target) {
+        document.getElementById('edit-mode-section').classList.remove('hidden');
+        document.getElementById('add-mode-section').classList.add('hidden');
+        document.getElementById('edit-name').value = target.name;
+        document.getElementById('edit-mass').value = Math.round(target.mass);
+    } else {
+        document.getElementById('edit-mode-section').classList.add('hidden');
+        document.getElementById('add-mode-section').classList.remove('hidden');
+    }
+}
+
+function hideContextMenu() { 
+    document.getElementById('context-menu').style.display = 'none'; 
+    backdrop.style.display = 'none';
+}
+
+document.getElementById('btn-save-edit').onclick = () => {
+    if (currentContextTarget) {
+        currentContextTarget.name = document.getElementById('edit-name').value;
+        const m = parseFloat(document.getElementById('edit-mass').value);
+        currentContextTarget.mass = m;
+        currentContextTarget.radius = Math.max(5, Math.pow(m / 100, 1/3) * 10);
+    }
+    hideContextMenu();
+};
+
+document.getElementById('btn-confirm-add').onclick = () => {
+    const wx = (lastInteractionPos.x - offsetX) / zoom;
+    const wy = (lastInteractionPos.y - offsetY) / zoom;
+    
+    const name = document.getElementById('add-name').value || "新天體";
+    const mass = parseFloat(document.getElementById('add-mass').value) || 200;
+    const radius = parseFloat(document.getElementById('add-radius').value) || 12;
+    
+    bodies.push(new Body(wx, wy, 0, 0, mass, radius, '#8ab4f8', name));
+    hideContextMenu();
+};
+
+document.getElementById('btn-delete').onclick = () => {
+    if (currentContextTarget) bodies.splice(bodies.indexOf(currentContextTarget), 1);
+    hideContextMenu();
+};
+
+function startGame(type) {
+    document.getElementById('home-screen').classList.add('hidden');
+    document.getElementById('game-ui').classList.remove('hidden');
+    document.getElementById('show-panel-btn').classList.remove('hidden');
+    if (type === 'solar') initSolarSystem();
+    else if (type === 'empty') bodies = [];
+    offsetX = canvas.width / 2; offsetY = canvas.height / 2;
+    if (!animationId) loop();
+}
+
+function promptNStars() { hideResetModal(); isPaused = true; document.getElementById('n-star-modal').classList.add('active'); }
+function hideNStarModal() { document.getElementById('n-star-modal').classList.remove('active'); isPaused = false; }
+function confirmNStars() {
+    initNStarSystem(parseInt(document.getElementById('n-count').value), parseFloat(document.getElementById('n-mass').value));
+    startGame('nstar'); hideNStarModal();
+}
+
+function togglePanel(v) { document.getElementById('game-ui').classList.toggle('hidden', !v); document.getElementById('show-panel-btn').classList.toggle('hidden', v); }
+function pauseGame() { isPaused = !isPaused; document.getElementById('pause-btn').innerText = isPaused ? '繼續' : '暫停'; }
+function resetZoom() { zoom = 1; offsetX = canvas.width/2; offsetY = canvas.height/2; }
+function showResetModal() { isPaused = true; document.getElementById('reset-modal').classList.add('active'); }
+function hideResetModal() { document.getElementById('reset-modal').classList.remove('active'); isPaused = false; }
+function confirmReset(type) { startGame(type); hideResetModal(); resetZoom(); }
+
+document.getElementById('time-scale').oninput = e => { 
+    timeScale = parseFloat(e.target.value); 
+    document.getElementById('time-val').innerText = timeScale.toFixed(1) + 'x'; 
+};
+
+window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+detectDevice();
+</script>
+</body>
+</html>
+
