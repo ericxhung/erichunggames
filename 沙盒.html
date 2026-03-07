@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Global Sandbox - Engineering Refactor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; overflow: hidden; touch-action: none; user-select: none; background: #020617; font-family: ui-monospace, 'Cascadia Code', monospace; }
+        canvas { display: block; image-rendering: pixelated; background: #000; cursor: crosshair; }
+        .glass-panel { backdrop-filter: blur(16px); background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255,255,255,0.1); }
+        
+        /* 太平洋中心導航器 */
+        .earth-navigator { position: relative; width: 300px; height: 180px; cursor: grab; }
+        .pixel-map-container { 
+            position: absolute; width: 100%; height: 100%; border-radius: 24px; overflow: hidden; 
+            background: #0f172a; border: 2px solid rgba(255,255,255,0.1);
+        }
+        
+        /* 像素地圖 SVG 渲染 (太平洋中心) */
+        .pixel-map-layer { 
+            position: absolute; width: 200%; height: 100%; 
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="180" viewBox="0 0 600 180"><g fill="%234ade80" opacity="0.8"><!-- 亞洲與大洋洲 --><path d="M40,50 h30 v20 h20 v30 h-20 v20 h-30 Z M80,120 h20 v20 h-20 Z M100,100 h15 v15 h-15 Z"/><!-- 澳洲 --><path d="M120,130 h30 v20 h-30 Z"/><!-- 美洲 --><path d="M480,40 h40 v30 h-20 v50 h30 v40 h-40 v-30 h-10 v-60 h-10 Z"/><path d="M0,80 h10 v20 h-10 Z"/></g></svg>');
+            background-size: 50% 100%; background-repeat: repeat-x;
+        }
+
+        .region-marker { 
+            position: absolute; padding: 4px 8px; background: rgba(59, 130, 246, 0.5); 
+            border: 1px solid #60a5fa; border-radius: 6px; font-size: 10px; color: white;
+            transform: translate(-50%, -50%); transition: all 0.2s; pointer-events: auto;
+        }
+        .region-marker:hover { background: #3b82f6; transform: translate(-50%, -55%) scale(1.1); }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <!-- 全球導航覆蓋層 -->
+    <div id="navOverlay" class="fixed inset-0 z-[100] bg-slate-950/90 flex flex-col items-center justify-center p-6 transition-opacity duration-500">
+        <div class="text-center mb-6">
+            <h2 class="text-2xl font-black italic tracking-tighter text-white uppercase">Pacific_Sandbox_v2</h2>
+            <div class="h-1 w-16 bg-blue-500 mx-auto mt-2"></div>
+        </div>
+
+        <div class="earth-navigator" id="mapViewport">
+            <div class="pixel-map-container">
+                <div style="position:absolute; inset:0; background: radial-gradient(circle, #1e3a8a 0%, #0f172a 100%);"></div>
+                <div style="position:absolute; inset:0; opacity:0.05; background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 20px 20px;"></div>
+                <div id="mapMovingLayer" class="pixel-map-layer"></div>
+            </div>
+            <div id="markerBox" class="absolute inset-0 pointer-events-none"></div>
+        </div>
+
+        <p class="text-slate-500 text-[10px] mt-6 max-w-xs text-center font-mono">
+            請選擇一個區域來初始化物理沙盒環境。地圖已根據 150°E 太平洋中心投影校準。
+        </p>
+    </div>
+
+    <!-- 頂部標題與工具 -->
+    <div class="glass-panel p-4 shrink-0 z-20 flex items-center justify-between border-b">
+        <div class="flex items-center gap-3">
+            <button onclick="openNav()" class="w-10 h-10 flex items-center justify-center bg-slate-800 rounded-xl border border-white/10">🗺️</button>
+            <div>
+                <h1 class="font-bold text-white text-xs tracking-widest uppercase" id="regionTitle">未載入區域</h1>
+                <div class="flex gap-2 text-[8px] text-slate-500 font-mono mt-0.5">
+                    <span>PHYS_CORE: ACTIVE</span>
+                    <span>FPS: <b id="fpsCounter">60</b></span>
+                </div>
+            </div>
+        </div>
+        <div id="brushToolbar" class="flex gap-1 overflow-x-auto no-scrollbar max-w-[40vw]"></div>
+    </div>
+
+    <!-- 物理畫布區 -->
+    <div class="flex-grow relative touch-none bg-black" id="simContainer">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+    <!-- 底部控制面板 -->
+    <div class="glass-panel p-4 shrink-0 flex flex-col gap-3 border-t">
+        <div class="flex items-center gap-4">
+            <div class="flex-1">
+                <div class="flex justify-between text-[9px] font-bold text-slate-400 mb-1 uppercase tracking-widest">
+                    <span>筆刷大小</span>
+                    <span id="brushSizeTxt" class="text-blue-400">8</span>
+                </div>
+                <input type="range" id="brushInput" min="1" max="40" value="8" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500">
+            </div>
+            <div class="flex gap-2">
+                <button id="btnDraw" class="w-12 h-12 flex items-center justify-center bg-blue-600 rounded-xl shadow-lg ring-2 ring-blue-400/20 active:scale-90 transition-transform">✏️</button>
+                <button id="btnErase" class="w-12 h-12 flex items-center justify-center bg-slate-800 rounded-xl active:scale-90 transition-transform">🧹</button>
+                <button onclick="clearCanvas()" class="w-12 h-12 flex items-center justify-center bg-red-900/30 text-red-400 rounded-xl border border-red-500/20 active:scale-90 transition-transform">重置</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 核心物理常數
+        const GRID_SIZE = 4;
+        const MATERIALS = {
+            EMPTY: 0, STONE: 1, SAND: 2, WATER: 3, LAVA: 4, GAS: 5, ACID: 6, DIRT: 7
+        };
+
+        const PROPS = {
+            [MATERIALS.EMPTY]: { name: '空氣', color: '#000', density: 0 },
+            [MATERIALS.STONE]: { name: '岩石', color: '#4b5563', density: 100, immovable: true },
+            [MATERIALS.SAND]: { name: '沙子', color: '#d97706', density: 50 },
+            [MATERIALS.WATER]: { name: '水', color: '#2563eb', density: 10, liquid: true },
+            [MATERIALS.LAVA]: { name: '熔岩', color: '#dc2626', density: 20, liquid: true, heat: true },
+            [MATERIALS.GAS]: { name: '蒸氣', color: '#94a3b8', density: -1 },
+            [MATERIALS.ACID]: { name: '強酸', color: '#84cc16', density: 15, liquid: true, corrosive: true },
+            [MATERIALS.DIRT]: { name: '泥土', color: '#78350f', density: 45 }
+        };
+
+        const REGIONS = [
+            { id: 'asia', name: '東亞板塊', lon: -30, lat: 30, preset: 'mountain' },
+            { id: 'pacific', name: '太平洋群島', lon: 10, lat: 0, preset: 'island' },
+            { id: 'america', name: '美洲海岸', lon: 100, lat: 20, preset: 'cliff' }
+        ];
+
+        let canvas, ctx, grid, nextGrid, width, height, cols, rows;
+        let selectedMat = MATERIALS.SAND, brushSize = 8, isDrawing = false, isEraser = false;
+        let mapRotation = 0, isDraggingMap = false, mapLastX = 0;
+
+        // 初始化導航地圖
+        function initMap() {
+            const movingLayer = document.getElementById('mapMovingLayer');
+            const markerBox = document.getElementById('markerBox');
+            
+            REGIONS.forEach(reg => {
+                const btn = document.createElement('div');
+                btn.className = 'region-marker';
+                btn.innerText = reg.name;
+                btn.onclick = (e) => { e.stopPropagation(); loadRegion(reg); };
+                markerBox.appendChild(btn);
+                reg.element = btn;
+            });
+
+            const updatePos = () => {
+                movingLayer.style.transform = `translateX(${(mapRotation % 300)}px)`;
+                REGIONS.forEach(reg => {
+                    let visualX = (reg.lon + (mapRotation/300)*360) % 360;
+                    if (visualX < -180) visualX += 360;
+                    if (visualX > 180) visualX -= 360;
+                    
+                    if (Math.abs(visualX) < 80) {
+                        reg.element.style.display = 'block';
+                        reg.element.style.left = `${150 + (visualX/80) * 140}px`;
+                        reg.element.style.top = `${90 - (reg.lat/60) * 70}px`;
+                        reg.element.style.opacity = 1 - Math.abs(visualX/80);
+                    } else {
+                        reg.element.style.display = 'none';
+                    }
+                });
+            };
+
+            const vp = document.getElementById('mapViewport');
+            const start = (e) => { isDraggingMap = true; mapLastX = e.clientX || e.touches[0].clientX; };
+            const move = (e) => {
+                if (!isDraggingMap) return;
+                const x = e.clientX || e.touches?.[0].clientX;
+                mapRotation += (x - mapLastX) * 0.8;
+                mapLastX = x;
+                updatePos();
+            };
+            vp.onmousedown = start; vp.ontouchstart = start;
+            window.onmousemove = move; window.ontouchmove = move;
+            window.onmouseup = window.ontouchend = () => isDraggingMap = false;
+            
+            updatePos();
+        }
+
+        function loadRegion(reg) {
+            document.getElementById('navOverlay').style.opacity = '0';
+            setTimeout(() => document.getElementById('navOverlay').classList.add('hidden'), 500);
+            document.getElementById('regionTitle').innerText = reg.name;
+            clearCanvas();
+            
+            // 預設地形生成 (工程模擬)
+            for(let x=0; x<cols; x++) {
+                let h = rows - 25;
+                if(reg.preset === 'mountain') h -= Math.sin(x*0.1)*20 + Math.random()*5;
+                if(reg.preset === 'cliff') h -= (x > cols/2) ? 40 : 5;
+                if(reg.preset === 'island') h -= (x > cols*0.3 && x < cols*0.7) ? 20 : -10;
+                
+                for(let y=Math.floor(h); y<rows; y++) {
+                    grid[y*cols+x] = (y < h+4) ? MATERIALS.DIRT : MATERIALS.STONE;
+                }
+            }
+        }
+
+        function openNav() {
+            document.getElementById('navOverlay').classList.remove('hidden');
+            setTimeout(() => document.getElementById('navOverlay').style.opacity = '1', 10);
+        }
+
+        // 初始化沙盒
+        function initSandbox() {
+            canvas = document.getElementById('simCanvas');
+            ctx = canvas.getContext('2d', { alpha: false });
+            const container = document.getElementById('simContainer');
+            width = container.clientWidth;
+            height = container.clientHeight;
+            canvas.width = width;
+            canvas.height = height;
+            cols = Math.floor(width / GRID_SIZE);
+            rows = Math.floor(height / GRID_SIZE);
+            grid = new Uint8Array(cols * rows);
+            nextGrid = new Uint8Array(cols * rows);
+
+            const toolbar = document.getElementById('brushToolbar');
+            Object.entries(PROPS).forEach(([id, p]) => {
+                if (id == 0) return;
+                const b = document.createElement('button');
+                b.className = "px-3 py-1.5 bg-slate-800 border border-white/5 rounded-lg text-[10px] text-slate-300 whitespace-nowrap active:bg-blue-600";
+                b.innerText = p.name;
+                b.onclick = () => { selectedMat = parseInt(id); isEraser = false; };
+                toolbar.appendChild(b);
+            });
+
+            bindEvents();
+            requestAnimationFrame(tick);
+        }
+
+        function bindEvents() {
+            const handleInput = (e) => {
+                if(!isDrawing) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.clientX || e.touches?.[0].clientX) - rect.left;
+                const y = (e.clientY || e.touches?.[0].clientY) - rect.top;
+                const cx = Math.floor(x / GRID_SIZE);
+                const cy = Math.floor(y / GRID_SIZE);
+                
+                for(let i=-brushSize; i<=brushSize; i++) {
+                    for(let j=-brushSize; j<=brushSize; j++) {
+                        if(i*i+j*j <= brushSize*brushSize) {
+                            const tx = cx+i, ty = cy+j;
+                            if(tx>=0 && tx<cols && ty>=0 && ty<rows) {
+                                if(isEraser) grid[ty*cols+tx] = MATERIALS.EMPTY;
+                                else if(grid[ty*cols+tx] === MATERIALS.EMPTY) grid[ty*cols+tx] = selectedMat;
+                            }
+                        }
+                    }
+                }
+            };
+            canvas.onpointerdown = (e) => { isDrawing = true; handleInput(e); };
+            window.onpointermove = handleInput;
+            window.onpointerup = () => isDrawing = false;
+            
+            document.getElementById('brushInput').oninput = (e) => {
+                brushSize = parseInt(e.target.value);
+                document.getElementById('brushSizeTxt').innerText = brushSize;
+            };
+            document.getElementById('btnDraw').onclick = () => isEraser = false;
+            document.getElementById('btnErase').onclick = () => isEraser = true;
+        }
+
+        function clearCanvas() { grid.fill(0); }
+
+        function tick() {
+            nextGrid.set(grid);
+            for(let y=rows-1; y>=0; y--) {
+                for(let x=0; x<cols; x++) {
+                    const idx = y*cols+x;
+                    const mat = grid[idx];
+                    if (mat === MATERIALS.EMPTY || PROPS[mat].immovable) continue;
+
+                    const p = PROPS[mat];
+                    let dy = p.density > 0 ? 1 : -1;
+                    let targetY = y + dy;
+
+                    if (targetY >= 0 && targetY < rows) {
+                        const downIdx = targetY * cols + x;
+                        const below = grid[downIdx];
+                        
+                        // 1. 垂直位移 (重力或浮力)
+                        if (PROPS[below].density < p.density) {
+                            nextGrid[idx] = nextGrid[downIdx];
+                            nextGrid[downIdx] = mat;
+                        } 
+                        // 2. 對角線位移 (堆疊)
+                        else {
+                            let dir = Math.random() < 0.5 ? 1 : -1;
+                            const diagIdx = targetY * cols + (x + dir);
+                            if (x + dir >= 0 && x + dir < cols && PROPS[grid[diagIdx]].density < p.density) {
+                                nextGrid[idx] = nextGrid[diagIdx];
+                                nextGrid[diagIdx] = mat;
+                            }
+                            // 3. 水平流動 (液體)
+                            else if (p.liquid) {
+                                const sideIdx = y * cols + (x + dir);
+                                if (x + dir >= 0 && x + dir < cols && PROPS[grid[sideIdx]].density < p.density) {
+                                    nextGrid[idx] = nextGrid[sideIdx];
+                                    nextGrid[sideIdx] = mat;
+                                }
+                            }
+                        }
+                    }
+
+                    // 特殊反應 (強酸腐蝕)
+                    if (p.corrosive && Math.random() < 0.05) {
+                        const neighbors = [idx-1, idx+1, idx-cols, idx+cols];
+                        neighbors.forEach(n => {
+                            if (n>=0 && n<grid.length && grid[n] !== MATERIALS.EMPTY && grid[n] !== MATERIALS.ACID) {
+                                if (!PROPS[grid[n]].immovable || Math.random() < 0.1) {
+                                    nextGrid[n] = MATERIALS.EMPTY;
+                                    nextGrid[idx] = MATERIALS.EMPTY;
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+            grid.set(nextGrid);
+
+            // 渲染
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0,0,width,height);
+            for(let i=0; i<grid.length; i++) {
+                if(grid[i] !== 0) {
+                    ctx.fillStyle = PROPS[grid[i]].color;
+                    ctx.fillRect((i%cols)*GRID_SIZE, Math.floor(i/cols)*GRID_SIZE, GRID_SIZE, GRID_SIZE);
+                }
+            }
+            requestAnimationFrame(tick);
+        }
+
+        window.onload = () => { initMap(); initSandbox(); };
+    </script>
+</body>
+</html>
+
