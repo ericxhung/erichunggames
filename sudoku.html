@@ -57,28 +57,30 @@
         }
 
         h1 {
-            font-size: 2rem;
+            font-size: 2.2rem;
             color: var(--pixel-primary);
             margin: 15px 0;
             text-shadow: 4px 4px 0px #eee;
         }
 
         .author {
-            font-size: 0.7rem;
+            font-size: 0.8rem;
             margin-bottom: 20px;
             color: var(--pixel-fixed);
         }
 
+        /* 還原先前的規則說明樣式 */
         .instructions {
-            background: #f0f0f0;
-            padding: 12px;
-            border: 4px solid var(--pixel-grid-border);
+            background: #f8f9fa;
+            padding: 15px;
+            border: 4px dashed var(--pixel-grid-border);
             margin-bottom: 20px;
             line-height: 1.6;
-            font-size: 0.65rem;
+            font-size: 0.7rem;
             text-align: left;
             width: 100%;
             box-sizing: border-box;
+            color: #444;
         }
 
         .difficulty-container {
@@ -95,7 +97,7 @@
             border: 3px solid var(--pixel-grid-border);
             padding: 12px 5px;
             font-family: inherit;
-            font-size: 0.7rem;
+            font-size: 0.8rem;
             cursor: pointer;
             box-shadow: 4px 4px 0px #bbb;
             transition: all 0.1s;
@@ -107,7 +109,7 @@
         .btn-med { background-color: #f39c12; }
         .btn-hard { background-color: var(--pixel-accent); }
         .btn-hint { background-color: var(--pixel-purple); font-size: 0.7rem; padding: 8px 12px; }
-        .btn-history { background-color: #f1c40f; color: #000; font-size: 0.55rem; }
+        .btn-history { background-color: #f1c40f; color: #000; font-size: 0.6rem; }
         
         .btn-note { 
             background-color: #ecf0f1; 
@@ -126,7 +128,7 @@
             justify-content: space-between;
             width: 100%;
             margin-bottom: 10px;
-            font-size: 0.65rem;
+            font-size: 0.7rem;
             font-weight: bold;
         }
 
@@ -206,8 +208,8 @@
             box-shadow: 8px 8px 0px #333;
         }
 
-        #modal-title { font-size: 1.2rem; margin-bottom: 15px; }
-        #modal-body { font-size: 0.7rem; margin-bottom: 20px; line-height: 1.6; text-align: left; }
+        #modal-title { font-size: 1.3rem; margin-bottom: 15px; }
+        #modal-body { font-size: 0.75rem; margin-bottom: 20px; line-height: 1.6; text-align: left; }
 
         .copyright {
             font-size: 0.5rem;
@@ -225,19 +227,27 @@
 </head>
 <body>
 
+
 <div id="game-container">
     <div id="home-screen" class="screen active">
-        <h1>數獨歷史百科</h1>
+        <h1>數獨 Pro+</h1>
         <p class="author">作者：70804 Eric</p>
+        
+        <!-- 還原之前的規則說明內容 -->
         <div class="instructions">
-            ● 點擊格子選擇，數字鍵填寫<br>
-            ● <b>N</b> 鍵切換筆記/填空模式<br>
-            ● 提示用完可透過閱讀歷史領取<br>
-            ● 50則數獨冷知識等你收集
+            <strong>【遊戲規則與操作】</strong><br>
+            1. 點擊空格後，使用下方數字鍵填入數字。<br>
+            2. 每行、每列、每個 3x3 九宮格數字不可重複。<br>
+            3. <strong>生命值：</strong>填錯會扣除 1 顆心，歸零則挑戰結束。<br>
+            4. <strong>筆記模式 (N)：</strong>開啟後可標註可能數字。<br>
+            5. <strong>提示功能 (H)：</strong>直接填入正確答案，次數有限。<br>
+            6. <strong>百科復活：</strong>失敗時可透過學習歷史知識獲得重生！
         </div>
+
         <div id="continue-container" style="display:none; margin-bottom: 15px; width: 100%;">
             <button onclick="loadSavedGame()" style="background:#f1c40f; width:100%;">繼續上次進度</button>
         </div>
+        
         <div class="difficulty-container">
             <button class="btn-easy" onclick="startGame('easy')">初級</button>
             <button class="btn-med" onclick="startGame('medium')">中級</button>
@@ -277,23 +287,30 @@
     </div>
 </div>
 
+<!-- 過關/結束 Modal -->
 <div id="game-modal" class="modal">
     <div class="modal-content">
         <h2 id="modal-title">過關！</h2>
         <p id="modal-body" style="text-align: center;"></p>
-        <div style="display:flex; gap:10px; justify-content:center;">
+        <div id="modal-buttons" style="display:flex; gap:10px; justify-content:center;">
             <button onclick="resetToHome()">首頁</button>
             <button id="next-level-btn" onclick="startNextLevel()">下一關</button>
+        </div>
+        <!-- 復活專用按鈕區域 -->
+        <div id="revive-buttons" style="display:none; flex-direction:column; gap:10px; margin-top:10px;">
+            <button class="btn-history" onclick="showHistoryForRevive()" style="width:100%;">閱讀歷史知識以復活 (恢復3心)</button>
+            <button onclick="resetToHome()" style="background:#bdc3c7;">放棄並回首頁</button>
         </div>
     </div>
 </div>
 
+<!-- 數獨歷史百科 Modal -->
 <div id="history-modal" class="modal">
     <div class="modal-content">
-        <h2 style="color:#f1c40f; font-size: 1rem; margin-bottom: 12px;">📜 數獨百科 (No.<span id="history-id"></span>/50)</h2>
+        <h2 style="color:#f1c40f; font-size: 1.1rem; margin-bottom: 12px;">📜 數獨百科 (No.<span id="history-id"></span>/50)</h2>
         <p id="history-text" style="font-size: 0.75rem; line-height: 1.6; text-align: left; margin-bottom: 15px;"></p>
-        <p style="font-size: 0.55rem; color: var(--pixel-success); margin-bottom: 15px;">※ 提示已補充！</p>
-        <button class="btn-easy" onclick="closeHistory()" style="width: 100%;">好的，我學到了！</button>
+        <p id="history-reward-text" style="font-size: 0.6rem; color: var(--pixel-success); margin-bottom: 15px;">※ 獎勵已備好！</p>
+        <button class="btn-easy" id="history-confirm-btn" onclick="closeHistory()" style="width: 100%;">好的，我學到了！</button>
     </div>
 </div>
 
@@ -301,7 +318,8 @@
     let gameState = {
         level: 1, score: 5000, lives: 3, hints: 3,
         board: [], solution: [], fixed: [], notes: [],
-        selectedIdx: 0, timer: null, gameActive: false, difficulty: 'easy', noteMode: false
+        selectedIdx: 0, timer: null, gameActive: false, difficulty: 'easy', noteMode: false,
+        pendingRevive: false
     };
 
     const puzzlePool = [
@@ -357,7 +375,7 @@
         { id: 44, text: "數獨能訓練專注力，因為一步出錯，整個棋盤都會崩潰。" },
         { id: 45, text: "「數獨」一詞在日本以外的地方，商標權其實並未被嚴格限制。" },
         { id: 46, text: "部分學校會將簡易數獨融入數學教材，訓練低年級學生的邏輯能力。" },
-        { id: 47, text: "數獨的解法可以用人工智慧中的「回溯法」(Backtracking) 輕易實現。" },
+        { id: 47, text: "數獨的解法可以用人工智慧中的「回溯法」(Backtracking) 輕愛實現。" },
         { id: 48, text: "目前最強的數獨玩家大多來自中國、日本和美國。" },
         { id: 49, text: "數獨也與拉丁方陣中的「相互正交拉丁方陣」理論密切相關。" },
         { id: 50, text: "這款遊戲是由 70804 Eric 的啟發，希望讓你邊玩邊了解數獨的博大精深！" }
@@ -375,13 +393,13 @@
     }
 
     window.onload = () => {
-        if (localStorage.getItem('sudoku_save_final')) {
+        if (localStorage.getItem('sudoku_save_edu_v2')) {
             document.getElementById('continue-container').style.display = 'block';
         }
         shuffleFacts();
     };
 
-    function saveGame() { localStorage.setItem('sudoku_save_final', JSON.stringify(gameState)); }
+    function saveGame() { localStorage.setItem('sudoku_save_edu_v2', JSON.stringify(gameState)); }
 
     function startGame(diff) {
         gameState.difficulty = diff;
@@ -396,6 +414,10 @@
         generateGame(gameState.difficulty);
         initBoard();
         updateHUD();
+        resetTimer();
+    }
+
+    function resetTimer() {
         if (gameState.timer) clearInterval(gameState.timer);
         gameState.timer = setInterval(() => { if (gameState.score > 0) { gameState.score--; updateHUD(); } }, 1000);
     }
@@ -515,7 +537,11 @@
 
     function useHint() {
         if (!gameState.gameActive) return;
-        if (gameState.hints <= 0) { showHistory(); return; }
+        if (gameState.hints <= 0) { 
+            gameState.pendingRevive = false;
+            showHistory(); 
+            return; 
+        }
         const idx = gameState.selectedIdx;
         if (gameState.board[idx] !== 0) return;
         gameState.board[idx] = gameState.solution[idx];
@@ -531,13 +557,30 @@
         const fact = getNextFact();
         document.getElementById('history-id').innerText = fact.id;
         document.getElementById('history-text').innerText = fact.text;
+        document.getElementById('history-reward-text').innerText = gameState.pendingRevive ? "※ 閱讀完成即將復活！" : "※ 提示已補充(+2)！";
         document.getElementById('history-modal').style.display = 'flex';
-        gameState.hints += 2;
+        
+        if (!gameState.pendingRevive) {
+            gameState.hints += 2;
+        }
         updateHUD();
+    }
+
+    function showHistoryForRevive() {
+        document.getElementById('game-modal').style.display = 'none';
+        gameState.pendingRevive = true;
+        showHistory();
     }
 
     function closeHistory() {
         document.getElementById('history-modal').style.display = 'none';
+        if (gameState.pendingRevive) {
+            gameState.lives = 3;
+            gameState.gameActive = true;
+            gameState.pendingRevive = false;
+            updateHUD();
+            resetTimer();
+        }
     }
 
     function toggleNoteMode() {
@@ -550,10 +593,28 @@
     function endGame(isWin) {
         gameState.gameActive = false;
         clearInterval(gameState.timer);
-        document.getElementById('game-modal').style.display = 'flex';
-        document.getElementById('modal-title').innerText = isWin ? "過關！" : "Game Over";
-        document.getElementById('modal-body').innerText = isWin ? `第 ${gameState.level} 關完成！\n積分：${gameState.score}` : "生命耗盡，再接再厲！";
-        if (isWin) localStorage.removeItem('sudoku_save_final');
+        const modal = document.getElementById('game-modal');
+        modal.style.display = 'flex';
+        
+        const title = document.getElementById('modal-title');
+        const body = document.getElementById('modal-body');
+        const btnNormal = document.getElementById('modal-buttons');
+        const btnRevive = document.getElementById('revive-buttons');
+
+        if (isWin) {
+            title.innerText = "過關！";
+            title.style.color = "var(--pixel-success)";
+            body.innerText = `第 ${gameState.level} 關完成！\n積分：${gameState.score}`;
+            btnNormal.style.display = 'flex';
+            btnRevive.style.display = 'none';
+            localStorage.removeItem('sudoku_save_edu_v2');
+        } else {
+            title.innerText = "生命耗盡！";
+            title.style.color = "var(--pixel-accent)";
+            body.innerText = "想繼續挑戰當前進度嗎？";
+            btnNormal.style.display = 'none';
+            btnRevive.style.display = 'flex';
+        }
     }
 
     function startNextLevel() {
@@ -566,16 +627,17 @@
         document.getElementById('game-modal').style.display = 'none';
         document.getElementById('game-screen').classList.remove('active');
         document.getElementById('home-screen').classList.add('active');
+        if (gameState.timer) clearInterval(gameState.timer);
     }
 
     function loadSavedGame() {
-        const saved = JSON.parse(localStorage.getItem('sudoku_save_final'));
+        const saved = JSON.parse(localStorage.getItem('sudoku_save_edu_v2'));
         if (saved) {
             gameState = saved;
             document.getElementById('home-screen').classList.remove('active');
             document.getElementById('game-screen').classList.add('active');
             initBoard(); updateHUD();
-            gameState.timer = setInterval(() => { if (gameState.score > 0) { gameState.score--; updateHUD(); } }, 1000);
+            resetTimer();
             gameState.gameActive = true;
         }
     }
@@ -596,3 +658,4 @@
 </script>
 </body>
 </html>
+
