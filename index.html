@@ -27,10 +27,11 @@
             flex-direction: column;
         }
 
-        /* 導覽列樣式 */
+        /* 導覽列 */
         nav {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--outline);
             height: 64px;
             display: flex;
@@ -38,7 +39,7 @@
             padding: 0 24px;
             position: sticky;
             top: 0;
-            z-index: 100;
+            z-index: 1000;
             justify-content: space-between;
             box-shadow: 0 1px 2px rgba(60, 64, 67, 0.1);
         }
@@ -109,7 +110,7 @@
             margin-top: 48px;
         }
 
-        /* 遊戲卡片樣式 */
+        /* 遊戲卡片 */
         .game-card {
             display: flex;
             flex-direction: column;
@@ -121,6 +122,7 @@
             border: 1px solid var(--outline);
             text-align: left;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            height: 100%;
         }
 
         .game-card:hover {
@@ -161,6 +163,7 @@
             color: var(--on-surface-variant);
             font-size: 0.95rem;
             line-height: 1.6;
+            margin-bottom: 16px;
         }
 
         .footer {
@@ -175,6 +178,7 @@
 
         @media (max-width: 640px) {
             .hero-title { font-size: 2rem; }
+            .nav-brand { font-size: 1.1rem; }
         }
     </style>
 </head>
@@ -184,10 +188,10 @@
         <a href="index.html" class="nav-brand">ERIC GAMES</a>
         <div class="nav-links">
             <a href="index.html" class="nav-btn active">首頁</a>
-            <a href="太空模擬.html" target="_blank" class="nav-btn">太空模擬</a>
+            <a href="太空模擬器.html" target="_blank" class="nav-btn">太空模擬</a>
             <a href="數獨.html" target="_blank" class="nav-btn">數獨 Pro+</a>
-            <a href="https://sites.google.com/view/erichunggames/%E6%B2%99%E7%9B%92" target="_blank" class="nav-btn">沙盒</a>
-            <a href="https://sites.google.com/view/erichunggames/%E8%B1%A1%E6%A3%8B" target="_blank" class="nav-btn">象棋</a>
+            <a href="沙盒.html" target="_blank" class="nav-btn">沙盒</a>
+            <a href="象棋.html" target="_blank" class="nav-btn">象棋</a>
         </div>
     </nav>
 
@@ -197,47 +201,47 @@
             <p style="color: var(--on-surface-variant); font-size: 1.1rem;">探索一系列由 Eric 開發的互動挑戰</p>
 
             <div class="game-grid">
-                <!-- 太空模擬卡片 -->
-                <a href="太空模擬.html" target="_blank" class="game-card">
+                <!-- 太空模擬 -->
+                <a href="太空模擬器.html" target="_blank" class="game-card">
                     <div class="card-banner" style="background: linear-gradient(135deg, #e8f0fe, #d2e3fc);">
                         🪐
                     </div>
                     <div class="card-content">
                         <div class="card-title">太空引力模擬</div>
-                        <p class="card-desc">探索星系演化的奧秘。模擬太陽系運動或自定義物理，觀察重力如何塑造宇宙。</p>
+                        <p class="card-desc">探索星系演化的奧秘。模擬太陽系運動或自定義物理系統，觀察重力如何塑造宇宙。</p>
                     </div>
                 </a>
 
-                <!-- 數獨卡片 -->
+                <!-- 數獨 -->
                 <a href="數獨.html" target="_blank" class="game-card">
                     <div class="card-banner" style="background: linear-gradient(135deg, #e6fffa, #b2f5ea);">
                         🔢
                     </div>
                     <div class="card-content">
                         <div class="card-title" style="font-family: 'Press Start 2P', cursive; font-size: 0.9rem; color: #00897b;">數獨 Pro+</div>
-                        <p class="card-desc" style="margin-top: 10px;">經典的像素風格謎題挑戰。擁有自動存檔功能，鍛鍊您的腦力極限。</p>
+                        <p class="card-desc" style="margin-top: 10px;">經典的像素風格謎題挑戰。擁有自動存檔功能與多種難度，鍛鍊您的腦力極限。</p>
                     </div>
                 </a>
 
-                <!-- 沙盒卡片 -->
-                <a href="https://sites.google.com/view/erichunggames/%E6%B2%99%E7%9B%92" target="_blank" class="game-card">
+                <!-- 沙盒 -->
+                <a href="沙盒.html" target="_blank" class="game-card">
                     <div class="card-banner" style="background: linear-gradient(135deg, #fff7e6, #ffe8cc);">
                         🏖️
                     </div>
                     <div class="card-content">
                         <div class="card-title">物理沙盒</div>
-                        <p class="card-desc">創意與科學的結合。在開放環境中實驗各種物質交互作用，創造你的物理世界。</p>
+                        <p class="card-desc">創意與科學的結合。在開放環境中實驗各種物質交互作用，創造屬於您的物理世界。</p>
                     </div>
                 </a>
 
-                <!-- 象棋卡片 -->
-                <a href="https://sites.google.com/view/erichunggames/%E8%B1%A1%E6%A3%8B" target="_blank" class="game-card">
+                <!-- 象棋 -->
+                <a href="象棋.html" target="_blank" class="game-card">
                     <div class="card-banner" style="background: linear-gradient(135deg, #fce4ec, #f8bbd0);">
-                        <span style="font-family: 'Noto Serif TC', serif; font-size: 3.5rem; color: #c62828; border: 4px solid #c62828; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; background: #fff;">帥</span>
+                        <div style="font-family: 'Noto Serif TC', serif; font-size: 3.5rem; color: #c62828; border: 4px solid #c62828; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; background: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">帥</div>
                     </div>
                     <div class="card-content">
                         <div class="card-title">經典象棋</div>
-                        <p class="card-desc">運籌帷幄，決勝千里。體驗傳統東方智慧的對弈，在方寸之間展現你的策略思維。</p>
+                        <p class="card-desc">運籌帷幄，決勝千里。體驗傳統東方智慧的對弈，在方寸棋盤之間展現您的策略思維。</p>
                     </div>
                 </a>
             </div>
