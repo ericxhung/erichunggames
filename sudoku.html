@@ -69,7 +69,6 @@
             color: var(--pixel-fixed);
         }
 
-        /* 還原先前的規則說明樣式 */
         .instructions {
             background: #f8f9fa;
             padding: 15px;
@@ -227,18 +226,11 @@
 </head>
 <body>
 
-<iframe 
-                            src="nav.html" 
-                            style="width: 100%; height: 64px; border: none; display: block;" 
-                                    scrolling="no" 
-                            title="導覽列">
-</iframe>
 <div id="game-container">
     <div id="home-screen" class="screen active">
         <h1>數獨 Pro+</h1>
         <p class="author">作者：70804 Eric</p>
         
-        <!-- 還原之前的規則說明內容 -->
         <div class="instructions">
             <strong>【遊戲規則與操作】</strong><br>
             1. 點擊空格後，使用下方數字鍵填入數字。<br>
@@ -258,7 +250,7 @@
             <button class="btn-med" onclick="startGame('medium')">中級</button>
             <button class="btn-hard" onclick="startGame('hard')">高級</button>
         </div>
-        <div class="copyright">Eric 使用 Gemini 製作，內容經歷史查證</div>
+        <div class="copyright">Eric 使用 Gemini 製作，採用動態生成演算法</div>
     </div>
 
     <div id="game-screen" class="screen">
@@ -292,7 +284,7 @@
     </div>
 </div>
 
-<!-- 過關/結束 Modal -->
+<!-- Modal 區塊 -->
 <div id="game-modal" class="modal">
     <div class="modal-content">
         <h2 id="modal-title">過關！</h2>
@@ -301,7 +293,6 @@
             <button onclick="resetToHome()">首頁</button>
             <button id="next-level-btn" onclick="startNextLevel()">下一關</button>
         </div>
-        <!-- 復活專用按鈕區域 -->
         <div id="revive-buttons" style="display:none; flex-direction:column; gap:10px; margin-top:10px;">
             <button class="btn-history" onclick="showHistoryForRevive()" style="width:100%;">閱讀歷史知識以復活 (恢復3心)</button>
             <button onclick="resetToHome()" style="background:#bdc3c7;">放棄並回首頁</button>
@@ -309,7 +300,6 @@
     </div>
 </div>
 
-<!-- 數獨歷史百科 Modal -->
 <div id="history-modal" class="modal">
     <div class="modal-content">
         <h2 style="color:#f1c40f; font-size: 1.1rem; margin-bottom: 12px;">📜 數獨百科 (No.<span id="history-id"></span>/50)</h2>
@@ -320,6 +310,7 @@
 </div>
 
 <script>
+    // --- 核心變量 ---
     let gameState = {
         level: 1, score: 5000, lives: 3, hints: 3,
         board: [], solution: [], fixed: [], notes: [],
@@ -327,12 +318,56 @@
         pendingRevive: false
     };
 
-    const puzzlePool = [
-        "534678912672195348198342567859761423426853791713924856961537284287419635345286179",
-        "435269781682571493197834562826195347374682915951743628519326874248957136763418259",
-        "245981376169273584837564219976125438513498627482736951391652874758349162624817953"
-    ];
+    // --- 數獨生成演算法 (Backtracking) ---
+    function isValid(board, row, col, num) {
+        for (let x = 0; x < 9; x++) if (board[row * 9 + x] === num) return false;
+        for (let x = 0; x < 9; x++) if (board[x * 9 + col] === num) return false;
+        let startRow = row - row % 3, startCol = col - col % 3;
+        for (let i = 0; i < 3; i++)
+            for (let j = 0; j < 3; j++)
+                if (board[(i + startRow) * 9 + (j + startCol)] === num) return false;
+        return true;
+    }
 
+    function solveSudoku(board) {
+        for (let i = 0; i < 81; i++) {
+            if (board[i] === 0) {
+                let nums = [1,2,3,4,5,6,7,8,9].sort(() => Math.random() - 0.5);
+                for (let num of nums) {
+                    let r = Math.floor(i / 9), c = i % 9;
+                    if (isValid(board, r, c, num)) {
+                        board[i] = num;
+                        if (solveSudoku(board)) return true;
+                        board[i] = 0;
+                    }
+                }
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function generateNewSudoku(difficulty) {
+        let board = new Array(81).fill(0);
+        solveSudoku(board);
+        gameState.solution = [...board];
+        
+        let removeCount = (difficulty === 'easy') ? 32 : (difficulty === 'medium' ? 46 : 54);
+        gameState.fixed = new Array(81).fill(true);
+        let removed = 0;
+        while (removed < removeCount) {
+            let idx = Math.floor(Math.random() * 81);
+            if (board[idx] !== 0) {
+                board[idx] = 0;
+                gameState.fixed[idx] = false;
+                removed++;
+            }
+        }
+        gameState.board = board;
+        gameState.notes = Array.from({length: 81}, () => []);
+    }
+
+    // --- 歷史知識庫 (50 則) ---
     const historyFacts = [
         { id: 1, text: "18世紀瑞士數學家歐拉(Leonhard Euler)發明了「拉丁方塊」，這是數獨的科學基礎。" },
         { id: 2, text: "歐拉最初研究拉丁方塊是為了探討排列組合性質，並非為了娛樂遊戲。" },
@@ -357,7 +392,7 @@
         { id: 21, text: "2005年，英國曾有一場謀殺案的陪審員因為偷玩數獨，導致審判被宣告無效。" },
         { id: 22, text: "數獨被稱為「世界上最令人著迷的益智遊戲」，因為它規則簡單卻充滿深度。" },
         { id: 23, text: "數獨屬於「NP完全」問題，這意味著隨著格子增加，難度會呈幾何倍數上升。" },
-        { id: 24, text: "在19世紀，法國報紙曾刊登過類似數獨的遊戲，但當時需要用到計算。" },
+        { id: 24, text: "在19世紀，法國報報紙曾刊登過類似數獨的遊戲，但當時需要用到計算。" },
         { id: 25, text: "數獨遊戲不需要用到任何一種特定的語言，因此是真正的全球化遊戲。" },
         { id: 26, text: "日本每年都會舉辦多次數獨認證考試，劃分難度等級。" },
         { id: 27, text: "數獨的邏輯技巧中，最基礎的叫做「唯一餘數法」。" },
@@ -380,31 +415,23 @@
         { id: 44, text: "數獨能訓練專注力，因為一步出錯，整個棋盤都會崩潰。" },
         { id: 45, text: "「數獨」一詞在日本以外的地方，商標權其實並未被嚴格限制。" },
         { id: 46, text: "部分學校會將簡易數獨融入數學教材，訓練低年級學生的邏輯能力。" },
-        { id: 47, text: "數獨的解法可以用人工智慧中的「回溯法」(Backtracking) 輕愛實現。" },
+        { id: 47, text: "數獨的解法可以用人工智慧中的「回溯法」(Backtracking) 實現。" },
         { id: 48, text: "目前最強的數獨玩家大多來自中國、日本和美國。" },
         { id: 49, text: "數獨也與拉丁方陣中的「相互正交拉丁方陣」理論密切相關。" },
         { id: 50, text: "這款遊戲是由 70804 Eric 的啟發，希望讓你邊玩邊了解數獨的博大精深！" }
     ];
 
     let factQueue = [];
+    function shuffleFacts() { factQueue = [...historyFacts].sort(() => Math.random() - 0.5); }
+    function getNextFact() { if (factQueue.length === 0) shuffleFacts(); return factQueue.pop(); }
 
-    function shuffleFacts() {
-        factQueue = [...historyFacts].sort(() => Math.random() - 0.5);
-    }
-
-    function getNextFact() {
-        if (factQueue.length === 0) shuffleFacts();
-        return factQueue.pop();
-    }
-
+    // --- 遊戲流程控制 ---
     window.onload = () => {
-        if (localStorage.getItem('sudoku_save_edu_v2')) {
-            document.getElementById('continue-container').style.display = 'block';
-        }
+        if (localStorage.getItem('sudoku_save_edu_final')) document.getElementById('continue-container').style.display = 'block';
         shuffleFacts();
     };
 
-    function saveGame() { localStorage.setItem('sudoku_save_edu_v2', JSON.stringify(gameState)); }
+    function saveGame() { localStorage.setItem('sudoku_save_edu_final', JSON.stringify(gameState)); }
 
     function startGame(diff) {
         gameState.difficulty = diff;
@@ -416,7 +443,7 @@
 
     function startLevel() {
         gameState.lives = 3; gameState.gameActive = true; gameState.noteMode = false;
-        generateGame(gameState.difficulty);
+        generateNewSudoku(gameState.difficulty);
         initBoard();
         updateHUD();
         resetTimer();
@@ -425,21 +452,6 @@
     function resetTimer() {
         if (gameState.timer) clearInterval(gameState.timer);
         gameState.timer = setInterval(() => { if (gameState.score > 0) { gameState.score--; updateHUD(); } }, 1000);
-    }
-
-    function generateGame(difficulty) {
-        const full = puzzlePool[Math.floor(Math.random() * puzzlePool.length)];
-        gameState.solution = full.split('').map(Number);
-        let removeCount = (difficulty === 'easy') ? 30 : (difficulty === 'medium' ? 45 : 55);
-        let currentBoard = [...gameState.solution];
-        gameState.fixed = new Array(81).fill(true);
-        gameState.notes = Array.from({length: 81}, () => []);
-        let removed = 0;
-        while (removed < removeCount) {
-            let idx = Math.floor(Math.random() * 81);
-            if (currentBoard[idx] !== 0) { currentBoard[idx] = 0; gameState.fixed[idx] = false; removed++; }
-        }
-        gameState.board = currentBoard;
     }
 
     function initBoard() {
@@ -465,7 +477,7 @@
             valSpan.id = `cell-val-${i}`;
             cell.appendChild(valSpan);
 
-            cell.addEventListener('click', () => selectCell(i));
+            cell.onclick = () => selectCell(i);
             boardEl.appendChild(cell);
         }
         updateBoardUI();
@@ -499,13 +511,8 @@
         document.getElementById('lives-display').innerText = "❤".repeat(Math.max(0, gameState.lives));
         document.getElementById('hints-count').innerText = gameState.hints;
         const hintBtn = document.getElementById('main-hint-btn');
-        if (gameState.hints > 0) {
-            hintBtn.innerText = "提示 (H)";
-            hintBtn.classList.remove('btn-history');
-        } else {
-            hintBtn.innerText = "閱讀歷史領提示";
-            hintBtn.classList.add('btn-history');
-        }
+        hintBtn.innerText = gameState.hints > 0 ? "提示 (H)" : "學習領提示";
+        if (gameState.hints <= 0) hintBtn.classList.add('btn-history'); else hintBtn.classList.remove('btn-history');
     }
 
     function inputNumber(num) {
@@ -515,7 +522,6 @@
 
         if (gameState.noteMode && num !== 0) {
             if (gameState.board[idx] !== 0) return;
-            if (!gameState.notes[idx]) gameState.notes[idx] = [];
             const nIdx = gameState.notes[idx].indexOf(num);
             if (nIdx > -1) gameState.notes[idx].splice(nIdx, 1);
             else gameState.notes[idx].push(num);
@@ -542,11 +548,7 @@
 
     function useHint() {
         if (!gameState.gameActive) return;
-        if (gameState.hints <= 0) { 
-            gameState.pendingRevive = false;
-            showHistory(); 
-            return; 
-        }
+        if (gameState.hints <= 0) { gameState.pendingRevive = false; showHistory(); return; }
         const idx = gameState.selectedIdx;
         if (gameState.board[idx] !== 0) return;
         gameState.board[idx] = gameState.solution[idx];
@@ -562,12 +564,9 @@
         const fact = getNextFact();
         document.getElementById('history-id').innerText = fact.id;
         document.getElementById('history-text').innerText = fact.text;
-        document.getElementById('history-reward-text').innerText = gameState.pendingRevive ? "※ 閱讀完成即將復活！" : "※ 提示已補充(+2)！";
+        document.getElementById('history-reward-text').innerText = gameState.pendingRevive ? "※ 學習完成！生命恢復 3 顆心！" : "※ 學習完成！獲得提示次數 +2！";
         document.getElementById('history-modal').style.display = 'flex';
-        
-        if (!gameState.pendingRevive) {
-            gameState.hints += 2;
-        }
+        if (!gameState.pendingRevive) gameState.hints += 2;
         updateHUD();
     }
 
@@ -580,11 +579,8 @@
     function closeHistory() {
         document.getElementById('history-modal').style.display = 'none';
         if (gameState.pendingRevive) {
-            gameState.lives = 3;
-            gameState.gameActive = true;
-            gameState.pendingRevive = false;
-            updateHUD();
-            resetTimer();
+            gameState.lives = 3; gameState.gameActive = true; gameState.pendingRevive = false;
+            updateHUD(); resetTimer();
         }
     }
 
@@ -600,23 +596,22 @@
         clearInterval(gameState.timer);
         const modal = document.getElementById('game-modal');
         modal.style.display = 'flex';
-        
         const title = document.getElementById('modal-title');
         const body = document.getElementById('modal-body');
         const btnNormal = document.getElementById('modal-buttons');
         const btnRevive = document.getElementById('revive-buttons');
 
         if (isWin) {
-            title.innerText = "過關！";
+            title.innerText = "成功過關！";
             title.style.color = "var(--pixel-success)";
-            body.innerText = `第 ${gameState.level} 關完成！\n積分：${gameState.score}`;
+            body.innerText = `恭喜完成第 ${gameState.level} 關！\n最終評分：${gameState.score}`;
             btnNormal.style.display = 'flex';
             btnRevive.style.display = 'none';
-            localStorage.removeItem('sudoku_save_edu_v2');
+            localStorage.removeItem('sudoku_save_edu_final');
         } else {
-            title.innerText = "生命耗盡！";
+            title.innerText = "挑戰失敗";
             title.style.color = "var(--pixel-accent)";
-            body.innerText = "想繼續挑戰當前進度嗎？";
+            body.innerText = "生命已用盡，要學習知識來復活嗎？";
             btnNormal.style.display = 'none';
             btnRevive.style.display = 'flex';
         }
@@ -636,29 +631,29 @@
     }
 
     function loadSavedGame() {
-        const saved = JSON.parse(localStorage.getItem('sudoku_save_edu_v2'));
+        const saved = JSON.parse(localStorage.getItem('sudoku_save_edu_final'));
         if (saved) {
             gameState = saved;
             document.getElementById('home-screen').classList.remove('active');
             document.getElementById('game-screen').classList.add('active');
-            initBoard(); updateHUD();
-            resetTimer();
+            initBoard(); updateHUD(); resetTimer();
             gameState.gameActive = true;
         }
     }
 
+    // 鍵盤支持
     document.addEventListener('keydown', (e) => {
         if (!gameState.gameActive) return;
         if (e.key >= '1' && e.key <= '9') inputNumber(parseInt(e.key));
         else if (e.key === '0' || e.key === 'Backspace') inputNumber(0);
         else if (e.key.toLowerCase() === 'h') useHint();
         else if (e.key.toLowerCase() === 'n') toggleNoteMode();
-        let row = Math.floor(gameState.selectedIdx / 9), col = gameState.selectedIdx % 9;
-        if (e.key === 'ArrowUp' && row > 0) row--;
-        else if (e.key === 'ArrowDown' && row < 8) row++;
-        else if (e.key === 'ArrowLeft' && col > 0) col--;
-        else if (e.key === 'ArrowRight' && col < 8) col++;
-        selectCell(row * 9 + col);
+        let r = Math.floor(gameState.selectedIdx / 9), c = gameState.selectedIdx % 9;
+        if (e.key === 'ArrowUp' && r > 0) r--;
+        else if (e.key === 'ArrowDown' && r < 8) r++;
+        else if (e.key === 'ArrowLeft' && c > 0) c--;
+        else if (e.key === 'ArrowRight' && c < 8) c++;
+        selectCell(r * 9 + c);
     });
 </script>
 </body>
