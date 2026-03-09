@@ -135,10 +135,20 @@
 <!-- 首頁螢幕 -->
 <iframe 
     src="nav.html" 
-    style="width: 100%; height: 64px; border: none; display: block; position: sticky; top: 0; z-index: 9999;" 
-    scrolling="no" 
-    title="導覽列">
+    style="
+        width: 100%; 
+        height: 64px; 
+        border: none; 
+        position: fixed; /* 強制固定 */
+        top: 0;          /* 貼緊頂部 */
+        left: 0;         /* 貼緊左側 */
+        z-index: 9999;   /* 確保最前 */
+        background: #ffffff;
+    " 
+    scrolling="no">
 </iframe>
+
+<div style="padding-top: 64px;"></div>
 <div id="home-screen" class="fixed inset-0 flex items-center justify-center z-[5000] bg-[#0b0b0b]">
     <div class="text-center p-8 m3-surface w-[90%] max-w-md">
         <h1 class="text-3xl font-bold mb-2 text-white">引力實驗室</h1>
