@@ -194,6 +194,7 @@ let timeScale = 0.2;
 let zoom = 1.0;
 let offsetX = 0, offsetY = 0;
 let isFromHome = false;
+const G = 1.0; // 引力常數
 
 // --- 物理類 ---
 class Body {
@@ -209,7 +210,7 @@ class Body {
         
         if (this.trail.length > 2) {
             ctx.beginPath();
-            ctx.strokeStyle = this.color + '22';
+            ctx.strokeStyle = this.color + '33';
             ctx.lineWidth = 1.5;
             ctx.moveTo((this.trail[0].x * zoom) + offsetX, (this.trail[0].y * zoom) + offsetY);
             for(let i=1; i<this.trail.length; i++) ctx.lineTo((this.trail[i].x * zoom) + offsetX, (this.trail[i].y * zoom) + offsetY);
@@ -279,46 +280,64 @@ function initSolar() {
     bodies = [];
     const sun = new Body(0, 0, 0, 0, 333000, 45, '#fdb813', '太陽');
     bodies.push(sun);
-    bodies.push(new Body(350, 0, 0, 18, 100, 10, '#2277ff', '地球'));
+    bodies.push(new Body(350, 0, 0, 30, 100, 10, '#2277ff', '地球'));
 }
 
 function initNStars(n, mass) {
     bodies = [];
     const R = 250;
-    const v = Math.sqrt(0.5 * mass / R);
+    
+    // 計算多星系統中維持圓周運動所需的初速
+    // 公式：v = sqrt( (G * M / R) * Sum_{j=1}^{n-1} [ 1 / (4 * sin(j*PI/n)) ] )
+    let sumSines = 0;
+    for (let j = 1; j < n; j++) {
+        sumSines += 1 / (4 * Math.sin((j * Math.PI) / n));
+    }
+    const v = Math.sqrt((G * mass / R) * sumSines);
+
     for (let i = 0; i < n; i++) {
         const ang = (i * 2 * Math.PI) / n;
-        bodies.push(new Body(R * Math.cos(ang), R * Math.sin(ang), -v * Math.sin(ang), v * Math.cos(ang), mass, 15, `hsl(${i*40}, 70%, 60%)`, `星體 ${i+1}`));
+        const px = R * Math.cos(ang);
+        const py = R * Math.sin(ang);
+        const vx = -v * Math.sin(ang);
+        const vy = v * Math.cos(ang);
+        bodies.push(new Body(px, py, vx, vy, mass, 15, `hsl(${i * (360/n)}, 70%, 60%)`, `星體 ${i+1}`));
     }
 }
 
 function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (!isPaused) {
+        // 物理計算
         for (let i=0; i<bodies.length; i++) {
             for (let j=i+1; j<bodies.length; j++) {
                 const b1 = bodies[i], b2 = bodies[j];
                 const dx = b2.x - b1.x, dy = b2.y - b1.y;
-                const d2 = dx*dx + dy*dy + 1;
-                const f = (0.5 * b1.mass * b2.mass) / d2;
-                const acc = f / b1.mass;
-                b1.vx += (acc * dx / Math.sqrt(d2)) * timeScale;
-                b1.vy += (acc * dy / Math.sqrt(d2)) * timeScale;
-                b2.vx -= (f / b2.mass * dx / Math.sqrt(d2)) * timeScale;
-                b2.vy -= (f / b2.mass * dy / Math.sqrt(d2)) * timeScale;
+                const distSq = dx*dx + dy*dy + 10; // 軟化因子防止近距離無限引力
+                const dist = Math.sqrt(distSq);
+                const force = (G * b1.mass * b2.mass) / distSq;
+                
+                const ax = (force * dx / dist) * timeScale;
+                const ay = (force * dy / dist) * timeScale;
+                
+                b1.vx += ax / b1.mass;
+                b1.vy += ay / b1.mass;
+                b2.vx -= ax / b2.mass;
+                b2.vy -= ay / b2.mass;
             }
         }
         bodies.forEach(b => {
-            b.x += b.vx; b.y += b.vy;
+            b.x += b.vx * timeScale; 
+            b.y += b.vy * timeScale;
             b.trail.push({x: b.x, y: b.y});
-            if (b.trail.length > 50) b.trail.shift();
+            if (b.trail.length > 100) b.trail.shift();
         });
     }
     bodies.forEach(b => b.draw());
     
     document.getElementById('count-val').innerText = bodies.length;
     let totalMass = bodies.reduce((s, b) => s + b.mass, 0);
-    document.getElementById('mass-val').innerText = totalMass.toLocaleString();
+    document.getElementById('mass-val').innerText = Math.round(totalMass).toLocaleString();
     
     requestAnimationFrame(loop);
 }
