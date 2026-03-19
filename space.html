@@ -29,11 +29,11 @@
         canvas { display: block; }
 
         .m3-surface {
-            background-color: var(--google-surface);
+            background-color: rgba(32, 33, 36, 0.9);
             border: 1px solid var(--google-outline);
             border-radius: 24px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(16px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(12px);
         }
 
         .m3-button {
@@ -44,6 +44,7 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
         }
 
         .m3-button-filled { background-color: var(--google-blue); color: #202124; }
@@ -52,7 +53,7 @@
         .custom-context-menu {
             position: fixed;
             display: none;
-            z-index: 2000;
+            z-index: 7000; 
             background: var(--google-surface);
             border: 1px solid var(--google-outline);
             padding: 24px;
@@ -67,26 +68,16 @@
             backdrop-filter: blur(10px); 
             position: fixed;
             inset: 0;
-            z-index: 1000;
+            z-index: 6000;
         }
         .modal-overlay.active { display: flex !important; }
 
-        .mobile-context-active .custom-context-menu {
-            position: fixed !important;
-            bottom: 40px !important;
-            left: 50% !important;
-            transform: translateX(-50%) !important;
-            top: auto !important;
-            width: 90vw !important;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
         .menu-backdrop {
             display: none;
             position: fixed;
             inset: 0;
             background: rgba(0,0,0,0.4);
-            z-index: 1999;
+            z-index: 6500;
             backdrop-filter: blur(2px);
         }
 
@@ -125,14 +116,26 @@
             display: none;
             z-index: 500;
         }
+
+        /* 優化滾動條 */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--google-blue);
+            border-radius: 50%;
+            cursor: pointer;
+        }
     </style>
 </head>
-<body class="mobile-mode-ready">
+<body>
 
 <div id="touch-indicator" class="touch-ring"></div>
 <div id="menu-backdrop" class="menu-backdrop" onclick="hideContextMenu()"></div>
 
 <!-- 首頁螢幕 -->
+
 <iframe 
     src="nav.html" 
     style="
@@ -148,7 +151,6 @@
     scrolling="no">
 </iframe>
 
-<div style="padding-top: 64px;"></div>
 <div id="home-screen" class="fixed inset-0 flex items-center justify-center z-[5000] bg-[#0b0b0b]">
     <div class="text-center p-8 m3-surface w-[90%] max-w-md">
         <h1 class="text-3xl font-bold mb-2 text-white">引力實驗室</h1>
@@ -165,95 +167,110 @@
     </div>
 </div>
 
-<!-- 控制按鈕 -->
-<div id="show-panel-btn" class="fixed top-4 left-4 z-[50] w-12 h-12 bg-[#8ab4f8] text-black rounded-2xl hidden items-center justify-center cursor-pointer shadow-lg" onclick="togglePanel(true)">
+<!-- 控制面板顯示按鈕 (僅在面板關閉時顯示) -->
+<div id="show-panel-btn" class="fixed top-6 left-6 z-[100] w-12 h-12 bg-[#8ab4f8] text-black rounded-2xl flex items-center justify-center cursor-pointer shadow-xl hover:scale-110 active:scale-95 transition-all hidden" onclick="togglePanel(true)">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
 </div>
 
-<div id="game-ui" class="fixed top-4 left-4 z-[40] hidden space-y-4">
-    <div id="main-panel" class="m3-surface p-6 relative w-72">
-        <button onclick="togglePanel(false)" class="absolute top-6 right-6 text-gray-500">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 18l-6-6 6-6"/></svg>
+<!-- 側邊 UI 容器 -->
+<div id="game-ui" class="fixed top-4 left-4 z-[40] hidden space-y-3 pointer-events-none">
+    <!-- 主控制面板 -->
+    <div id="main-panel" class="m3-surface p-6 relative w-72 pointer-events-auto">
+        <button onclick="togglePanel(false)" class="absolute top-5 right-5 text-gray-500 hover:text-white transition-colors">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
-        <h2 class="text-lg font-medium text-white mb-6">控制面板</h2>
+        
+        <h2 class="text-xl font-bold text-white mb-6">控制面板</h2>
+        
         <div class="space-y-6">
             <div>
-                <div class="flex justify-between text-xs mb-2 text-gray-400">
+                <div class="flex justify-between text-xs mb-3 text-gray-400 font-medium">
                     <span>時間流速</span>
-                    <span id="time-val" class="text-blue-300">0.2x</span>
+                    <span id="time-val" class="text-blue-300 bg-blue-900/20 px-2 py-0.5 rounded">0.2x</span>
                 </div>
-                <input type="range" id="time-scale" min="0" max="5" step="0.1" value="0.2" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                <input type="range" id="time-scale" min="0" max="5" step="0.1" value="0.2" class="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer">
             </div>
-            <div class="grid grid-cols-2 gap-2">
-                <button onclick="pauseGame()" id="pause-btn" class="m3-button m3-button-tonal text-xs px-0">暫停</button>
-                <button onclick="resetZoom()" class="m3-button m3-button-tonal text-xs px-0">重置視角</button>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="pauseGame()" id="pause-btn" class="m3-button m3-button-tonal text-sm font-bold">暫停</button>
+                <button onclick="resetZoom()" class="m3-button m3-button-tonal text-sm font-bold">重置視角</button>
             </div>
+
             <div class="pt-4 border-t border-google-outline flex flex-col gap-2">
-                <button onclick="toggleDeviceMode()" class="m3-button bg-gray-800 text-gray-300 text-[10px] py-1">
-                    模式：<span id="mode-label" class="ml-1 text-blue-300">自動</span>
+                <button onclick="toggleDeviceMode()" class="m3-button bg-[#303134] text-gray-300 text-xs py-2">
+                    操作模式：<span id="mode-label" class="ml-1 text-blue-300">自動</span>
                 </button>
-                <button onclick="showResetModal()" class="m3-button border border-red-900/50 text-red-400 text-xs py-2">重置宇宙</button>
+                <button onclick="showResetModal()" class="m3-button border border-red-900/50 text-red-400 text-sm py-2 hover:bg-red-900/10">重置宇宙</button>
             </div>
         </div>
     </div>
-    <div id="stats" class="m3-surface p-4 text-[10px] text-gray-400 flex flex-col gap-1 w-48">
-        <div class="flex justify-between"><span>星體數量</span><span id="count-val" class="text-white">0</span></div>
-        <div class="flex justify-between"><span>總質量</span><span id="mass-val" class="text-white">0</span></div>
+
+    <!-- 統計數據面板 -->
+    <div id="stats" class="m3-surface p-4 text-[11px] text-gray-400 flex flex-col gap-1.5 w-48 pointer-events-auto">
+        <div class="flex justify-between items-center">
+            <span>星體數量</span>
+            <span id="count-val" class="text-white font-bold text-sm">0</span>
+        </div>
+        <div class="flex justify-between items-center">
+            <span>總質量 (M)</span>
+            <span id="mass-val" class="text-white font-bold text-sm">0</span>
+        </div>
     </div>
 </div>
 
-<!-- 選單與彈窗 -->
+<!-- 自定義選單 (右鍵點擊) -->
 <div id="context-menu" class="custom-context-menu m3-surface">
-    <!-- 編輯現有星體 -->
     <div id="edit-mode-section">
-        <p class="font-medium text-blue-300 mb-4 border-b border-google-outline pb-2 text-center text-lg">編輯星體屬性</p>
+        <p class="font-bold text-blue-300 mb-4 border-b border-google-outline pb-3 text-center text-lg">編輯星體屬性</p>
         <div class="space-y-4">
-            <div><label>星體名稱</label><input type="text" id="edit-name"></div>
+            <div><label>星體名稱</label><input type="text" id="edit-name" placeholder="請輸入名稱"></div>
             <div><label>物理質量 (M)</label><input type="number" id="edit-mass"></div>
             <div class="flex flex-col gap-2 mt-4">
-                <button id="btn-save-edit" class="m3-button m3-button-filled py-4">儲存並返回</button>
+                <button id="btn-save-edit" class="m3-button m3-button-filled py-4 text-lg">儲存並返回</button>
                 <button id="btn-delete" class="m3-button bg-red-900/20 text-red-400 py-3">移除此星體</button>
                 <button onclick="hideContextMenu()" class="text-gray-500 text-sm py-2">取消</button>
             </div>
         </div>
     </div>
-    <!-- 新增星體參數 -->
     <div id="add-mode-section" class="hidden">
-        <p class="font-medium text-green-400 mb-4 border-b border-google-outline pb-2 text-center text-lg">在此建立天體</p>
+        <p class="font-bold text-green-400 mb-4 border-b border-google-outline pb-3 text-center text-lg">在此建立天體</p>
         <div class="space-y-4">
             <div><label>名稱</label><input type="text" id="add-name" value="新天體"></div>
-            <div><label>初始質量</label><input type="number" id="add-mass" value="200" oninput="updateAddRadius()"></div>
-            <div><label>半徑 (體積尺寸)</label><input type="number" id="add-radius" value="12"></div>
+            <div><label>初始質量</label><input type="number" id="add-mass" value="200"></div>
+            <div><label>半徑 (尺寸)</label><input type="number" id="add-radius" value="12"></div>
             <div class="flex flex-col gap-2 mt-4">
-                <button id="btn-confirm-add" class="m3-button m3-button-filled py-4">確認建立</button>
+                <button id="btn-confirm-add" class="m3-button m3-button-filled py-4 text-lg">確認建立</button>
                 <button onclick="hideContextMenu()" class="text-gray-500 text-sm py-2">取消</button>
             </div>
         </div>
     </div>
 </div>
 
+<!-- N 星系統彈窗 -->
 <div id="n-star-modal" class="modal-overlay items-center justify-center p-4">
     <div class="m3-surface p-8 w-full max-w-sm">
-        <h3 class="text-xl font-medium mb-4 text-white">建立 N 星系統</h3>
-        <div class="space-y-4 mb-6">
-            <div><label>恆星數量</label><input type="number" id="n-count" value="3"></div>
+        <h3 class="text-2xl font-bold mb-6 text-white text-center">建立 N 星系統</h3>
+        <div class="space-y-5 mb-8">
+            <div><label>恆星數量 (2-12)</label><input type="number" id="n-count" value="3"></div>
             <div><label>單星質量</label><input type="number" id="n-mass" value="3000"></div>
         </div>
-        <div class="flex flex-col gap-2">
-            <button onclick="confirmNStars()" class="m3-button m3-button-filled">生成系統</button>
+        <div class="flex flex-col gap-3">
+            <button onclick="confirmNStars()" class="m3-button m3-button-filled py-4 text-lg">生成系統</button>
             <button onclick="hideNStarModal()" class="m3-button m3-button-tonal">取消</button>
         </div>
     </div>
 </div>
 
+<!-- 重置確認彈窗 -->
 <div id="reset-modal" class="modal-overlay items-center justify-center p-4">
     <div class="m3-surface p-8 max-w-xs w-full text-center">
-        <h3 class="text-xl font-medium mb-6 text-white">重置宇宙</h3>
+        <h3 class="text-2xl font-bold mb-6 text-white">重置宇宙</h3>
+        <p class="text-gray-400 mb-8 text-sm">請選擇初始模組，目前的星體將被移除。</p>
         <div class="flex flex-col gap-3">
             <button onclick="confirmReset('solar')" class="m3-button m3-button-tonal">太陽系</button>
             <button onclick="promptNStars()" class="m3-button m3-button-filled">N 星系統</button>
             <button onclick="confirmReset('empty')" class="m3-button m3-button-tonal">清空</button>
-            <button onclick="hideResetModal()" class="mt-4 text-gray-500 text-xs">取消</button>
+            <button onclick="hideResetModal()" class="mt-6 text-gray-500 text-sm hover:underline cursor-pointer">返回實驗室</button>
         </div>
     </div>
 </div>
@@ -267,32 +284,7 @@ const touchRing = document.getElementById('touch-indicator');
 const backdrop = document.getElementById('menu-backdrop');
 
 let isTouchMode = false;
-function detectDevice() {
-    isTouchMode = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    updateUIForMode();
-}
-
-function updateUIForMode() {
-    const icon = document.getElementById('device-icon');
-    const text = document.getElementById('device-text');
-    const label = document.getElementById('mode-label');
-    if (isTouchMode) {
-        icon.innerText = "📱";
-        text.innerText = "行動模式：長按 0.6s 顯示選單";
-        label.innerText = "手機";
-        document.body.classList.add('mobile-mode-active');
-    } else {
-        icon.innerText = "💻";
-        text.innerText = "桌面模式：滑鼠右鍵點擊選單";
-        label.innerText = "電腦";
-        document.body.classList.remove('mobile-mode-active');
-    }
-}
-
-function toggleDeviceMode() {
-    isTouchMode = !isTouchMode;
-    updateUIForMode();
-}
+let currentMousePos = { x: 0, y: 0 }; 
 
 // --- 物理引擎 ---
 const G = 0.5; 
@@ -309,16 +301,18 @@ class Body {
         this.mass = mass; this.radius = radius; this.color = color; this.name = name;
         this.trail = [];
         this.isDragged = false;
+        this.isAiming = false; 
     }
     draw() {
         const sx = (this.x * zoom) + offsetX;
         const sy = (this.y * zoom) + offsetY;
         const sr = Math.max(1, this.radius * zoom);
 
+        // 軌跡繪製
         if (this.trail.length > 2) {
             ctx.beginPath();
-            ctx.strokeStyle = this.color + '22'; 
-            ctx.lineWidth = 1;
+            ctx.strokeStyle = this.color + '33'; 
+            ctx.lineWidth = 1.5;
             ctx.moveTo((this.trail[0].x * zoom) + offsetX, (this.trail[0].y * zoom) + offsetY);
             for(let i=1; i<this.trail.length; i++) {
                 ctx.lineTo((this.trail[i].x * zoom) + offsetX, (this.trail[i].y * zoom) + offsetY);
@@ -326,36 +320,66 @@ class Body {
             ctx.stroke();
         }
 
-        if (sx + sr < 0 || sx - sr > canvas.width || sy + sr < 0 || sy - sr > canvas.height) return;
-
         ctx.beginPath();
         ctx.arc(sx, sy, sr, 0, Math.PI * 2);
-        ctx.fillStyle = this.isDragged ? '#ffffff' : this.color;
+        ctx.fillStyle = this.isDragged ? '#ffffff' : (this.isAiming ? '#ffdd00' : this.color);
         if (this.mass > 500) {
-            ctx.shadowBlur = (this.isDragged ? 25 : 10) * zoom;
+            ctx.shadowBlur = (this.isDragged || this.isAiming ? 25 : 10) * zoom;
             ctx.shadowColor = this.color;
         }
         ctx.fill();
         ctx.shadowBlur = 0;
 
-        if (zoom > 0.6) {
-            ctx.fillStyle = 'rgba(255,255,255,0.8)';
-            ctx.font = `${Math.max(12, 12 * zoom)}px "Google Sans"`;
+        // 右鍵同向彈射箭頭
+        if (this.isAiming && currentMousePos) {
+            const dx = currentMousePos.x - sx;
+            const dy = currentMousePos.y - sy;
+            const dist = Math.hypot(dx, dy);
+            if (dist > 5) {
+                const angle = Math.atan2(dy, dx);
+                const hue = Math.max(0, 200 - dist/3); 
+                ctx.save();
+                ctx.strokeStyle = `hsla(${hue}, 90%, 65%, 0.8)`;
+                ctx.lineWidth = 4;
+                ctx.lineCap = 'round';
+                ctx.setLineDash([10, 5]);
+                ctx.beginPath();
+                ctx.moveTo(sx, sy);
+                ctx.lineTo(currentMousePos.x, currentMousePos.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.translate(currentMousePos.x, currentMousePos.y);
+                ctx.rotate(angle);
+                ctx.moveTo(0, 0); ctx.lineTo(-18, -10); ctx.lineTo(-18, 10);
+                ctx.closePath();
+                ctx.fillStyle = `hsla(${hue}, 90%, 65%, 0.9)`;
+                ctx.fill();
+                ctx.restore();
+                ctx.fillStyle = "white";
+                ctx.font = "bold 14px 'Google Sans'";
+                ctx.textAlign = "left";
+                ctx.fillText(`發射威力: ${Math.round(dist)}`, currentMousePos.x + 20, currentMousePos.y);
+            }
+        }
+
+        if (zoom > 0.5) {
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.font = `${Math.max(12, 13 * zoom)}px "Google Sans"`;
             ctx.textAlign = 'center';
-            ctx.fillText(this.name || "Planet", sx, sy + sr + 15 * zoom);
+            ctx.fillText(this.name || "Planet", sx, sy + sr + 18 * zoom);
         }
     }
     updatePhysics(others, dt) {
-        if (isPaused || this.isDragged) return;
+        if (isPaused || this.isDragged || this.isAiming) return;
         others.forEach(other => {
-            if (other === this || other.isDragged) return;
+            if (other === this || other.isDragged || other.isAiming) return;
             const dx = other.x - this.x;
             const dy = other.y - this.y;
             const distSq = dx * dx + dy * dy + 1; 
             const dist = Math.sqrt(distSq);
-            if (dist < (this.radius + other.radius) * 0.7) {
-                this.merge(other);
-                return;
+            if (dist < (this.radius + other.radius) * 0.75) {
+                this.merge(other); return;
             }
             const f = (G * other.mass) / distSq;
             this.vx += (f * dx / dist) * dt;
@@ -363,9 +387,8 @@ class Body {
         });
     }
     move(dt) {
-        if (!isPaused && !this.isDragged) {
-            this.x += this.vx * dt;
-            this.y += this.vy * dt;
+        if (!isPaused && !this.isDragged && !this.isAiming) {
+            this.x += this.vx * dt; this.y += this.vy * dt;
         }
     }
     merge(other) {
@@ -381,15 +404,16 @@ class Body {
     }
 }
 
+// --- 初始化星系 ---
 function initSolarSystem() {
     bodies = [];
-    const EM = 100; const AU = 300;
-    const sun = new Body(0, 0, 0, 0, EM * 3330, 45, '#fdb813', '太陽');
+    const EM = 100; const AU = 350;
+    const sun = new Body(0, 0, 0, 0, EM * 3330, 48, '#fdb813', '太陽');
     bodies.push(sun);
     const planetData = [[0.38, 0.05, 0.4, '#97979f', '水星'], [0.72, 0.81, 0.9, '#e3bb76', '金星'], [1.0, 1.0, 1.0, '#2277ff', '地球'], [1.52, 0.1, 0.5, '#ff5533', '火星']];
     planetData.forEach(([dAU, mE, rE, col, name]) => {
         const d = dAU * AU; const v = Math.sqrt((G * sun.mass) / d);
-        bodies.push(new Body(d, 0, 0, v, mE * EM, rE * 8, col, name));
+        bodies.push(new Body(d, 0, 0, v, mE * EM, rE * 9, col, name));
     });
 }
 
@@ -399,7 +423,7 @@ function initNStarSystem(n, starMassInput) {
     const starRadius = Math.max(10, Math.pow(mass / 100, 1/3) * 10);
     const minSafeChord = starRadius * 8; 
     const calculatedR = minSafeChord / (2 * Math.sin(Math.PI / n));
-    const R = Math.max(250, calculatedR);
+    const R = Math.max(280, calculatedR);
     let netForceFactor = 0;
     for (let i = 1; i < n; i++) {
         const angle = (i * 2 * Math.PI) / n;
@@ -409,10 +433,8 @@ function initNStarSystem(n, starMassInput) {
     const v = Math.sqrt(G * mass * netForceFactor * R);
     for (let i = 0; i < n; i++) {
         const angle = (i * 2 * Math.PI) / n;
-        const x = R * Math.cos(angle);
-        const y = R * Math.sin(angle);
-        const vx = -v * Math.sin(angle);
-        const vy = v * Math.cos(angle);
+        const x = R * Math.cos(angle); const y = R * Math.sin(angle);
+        const vx = -v * Math.sin(angle); const vy = v * Math.cos(angle);
         bodies.push(new Body(x, y, vx, vy, mass, starRadius, `hsl(${(i * 360) / n}, 80%, 70%)`, `星體 ${i+1}`));
     }
 }
@@ -426,9 +448,9 @@ function loop() {
             bodies.forEach(b => b.move(dt));
         }
         bodies.forEach(b => {
-            if (!b.isDragged) {
+            if (!b.isDragged && !b.isAiming) {
                 b.trail.push({x: b.x, y: b.y});
-                if (b.trail.length > 60) b.trail.shift();
+                if (b.trail.length > 70) b.trail.shift();
             }
         });
     }
@@ -439,16 +461,29 @@ function loop() {
     animationId = requestAnimationFrame(loop);
 }
 
-// --- 深度交互優化 ---
+// --- 互動邏輯 ---
 let isDragging = false, dragTarget = null;
 let lastPinchDist = null;
 let longPressTimer = null;
 let lastInteractionPos = { x: 0, y: 0 };
 let currentContextTarget = null;
 let startTouchPos = { x: 0, y: 0 };
-let moveHistory = []; 
 
-function handlePress(x, y, isTouch = false) {
+window.addEventListener('contextmenu', e => {
+    if (e.target.tagName === 'INPUT') return;
+    e.preventDefault();
+    const moveDist = Math.hypot(e.clientX - startTouchPos.x, e.clientY - startTouchPos.y);
+    if (!isTouchMode && moveDist < 5) {
+        const wx = (e.clientX - offsetX) / zoom;
+        const wy = (e.clientY - offsetY) / zoom;
+        const target = bodies.find(b => Math.sqrt((b.x-wx)**2 + (b.y-wy)**2) < b.radius + 35/zoom);
+        lastInteractionPos = { x: e.clientX, y: e.clientY };
+        showContextMenu(e.clientX, e.clientY, target);
+    }
+}, false);
+
+function handlePress(x, y, isTouch = false, btn = 0) {
+    if (document.elementFromPoint(x, y)?.closest('.m3-surface, .custom-context-menu')) return;
     const wx = (x - offsetX) / zoom;
     const wy = (y - offsetY) / zoom;
     const target = bodies.find(b => Math.sqrt((b.x-wx)**2 + (b.y-wy)**2) < b.radius + 35/zoom);
@@ -457,12 +492,17 @@ function handlePress(x, y, isTouch = false) {
     lastInteractionPos = { x, y };
     startTouchPos = { x, y };
     isDragging = true;
-    moveHistory = [{ x: wx, y: wy, t: Date.now() }];
+    currentMousePos = { x, y };
 
     if (target) {
         dragTarget = target;
-        dragTarget.isDragged = true;
-        dragTarget.trail = []; 
+        if (btn === 2) { 
+            dragTarget.isAiming = true;
+            dragTarget.trail = [];
+        } else { 
+            dragTarget.isDragged = true;
+            dragTarget.trail = []; 
+        }
     } else {
         dragTarget = { type: 'camera', lastX: x, lastY: y };
     }
@@ -472,10 +512,9 @@ function handlePress(x, y, isTouch = false) {
         touchRing.style.left = (x - 40) + 'px';
         touchRing.style.top = (y - 40) + 'px';
         touchRing.style.display = 'block';
-
         longPressTimer = setTimeout(() => {
             const moveDist = Math.hypot(x - startTouchPos.x, y - startTouchPos.y);
-            if (moveDist < 8) {
+            if (moveDist < 10) {
                 isDragging = false;
                 if (dragTarget && dragTarget.isDragged) dragTarget.isDragged = false;
                 touchRing.style.display = 'none';
@@ -487,76 +526,74 @@ function handlePress(x, y, isTouch = false) {
 }
 
 function handleMove(x, y) {
+    currentMousePos = { x, y };
     if (!isDragging || !dragTarget) return;
-    const moveDist = Math.hypot(x - startTouchPos.x, y - startTouchPos.y);
-    if (moveDist > 10) {
+    if (Math.hypot(x - startTouchPos.x, y - startTouchPos.y) > 15) {
         clearTimeout(longPressTimer);
         touchRing.style.display = 'none';
     }
+    if (dragTarget.isAiming) return;
     const wx = (x - offsetX) / zoom;
     const wy = (y - offsetY) / zoom;
-    moveHistory.push({ x: wx, y: wy, t: Date.now() });
-    if (moveHistory.length > 5) moveHistory.shift();
     if (dragTarget.type === 'camera') {
         offsetX += (x - dragTarget.lastX);
         offsetY += (y - dragTarget.lastY);
-        dragTarget.lastX = x;
-        dragTarget.lastY = y;
+        dragTarget.lastX = x; dragTarget.lastY = y;
     } else {
-        dragTarget.x = wx;
-        dragTarget.y = wy;
+        dragTarget.x = wx; dragTarget.y = wy;
     }
 }
 
 function handleEnd() {
-    if (dragTarget && dragTarget.type !== 'camera') {
-        if (moveHistory.length >= 2) {
-            const first = moveHistory[0];
-            const last = moveHistory[moveHistory.length - 1];
-            const dt = (last.t - first.t) || 16;
-            dragTarget.vx = ((last.x - first.x) / dt) * 15;
-            dragTarget.vy = ((last.y - first.y) / dt) * 15;
+    if (dragTarget) {
+        if (dragTarget.isAiming) {
+            const sx = (dragTarget.x * zoom) + offsetX;
+            const sy = (dragTarget.y * zoom) + offsetY;
+            const dx = (currentMousePos.x - sx) / zoom;
+            const dy = (currentMousePos.y - sy) / zoom;
+            const speedFactor = 0.05;
+            dragTarget.vx = dx * speedFactor;
+            dragTarget.vy = dy * speedFactor;
+            dragTarget.isAiming = false;
         }
         dragTarget.isDragged = false;
     }
     isDragging = false;
     dragTarget = null;
-    moveHistory = [];
     clearTimeout(longPressTimer);
     touchRing.style.display = 'none';
 }
 
-canvas.addEventListener('mousedown', e => {
-    if (e.button === 2) { 
-        const wx = (e.clientX - offsetX) / zoom;
-        const wy = (e.clientY - offsetY) / zoom;
-        const target = bodies.find(b => Math.sqrt((b.x-wx)**2 + (b.y-wy)**2) < b.radius + 35/zoom);
-        lastInteractionPos = { x: e.clientX, y: e.clientY };
-        showContextMenu(e.clientX, e.clientY, target);
-        e.preventDefault();
-    } else {
-        handlePress(e.clientX, e.clientY, false);
-    }
-});
+canvas.addEventListener('mousedown', e => handlePress(e.clientX, e.clientY, false, e.button));
 canvas.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
 canvas.addEventListener('mouseup', handleEnd);
-canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const scaleFactor = e.deltaY > 0 ? 0.9 : 1.1;
+    const midX = e.clientX, midY = e.clientY;
+    const wx = (midX - offsetX) / zoom;
+    const wy = (midY - offsetY) / zoom;
+    zoom = Math.min(Math.max(zoom * scaleFactor, 0.01), 30);
+    offsetX = midX - wx * zoom;
+    offsetY = midY - wy * zoom;
+}, { passive: false });
 
 canvas.addEventListener('touchstart', e => {
+    if (e.target.closest('.m3-surface, .custom-context-menu')) return;
     e.preventDefault();
-    if (e.touches.length === 1) {
-        handlePress(e.touches[0].clientX, e.touches[0].clientY, true);
-    } else if (e.touches.length === 2) {
+    if (e.touches.length === 1) handlePress(e.touches[0].clientX, e.touches[0].clientY, true);
+    else if (e.touches.length === 2) {
         handleEnd();
         lastPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
     }
 }, { passive: false });
 
 canvas.addEventListener('touchmove', e => {
+    if (e.target.closest('.m3-surface, .custom-context-menu')) return;
     e.preventDefault();
-    if (e.touches.length === 1) {
-        handleMove(e.touches[0].clientX, e.touches[0].clientY);
-    } else if (e.touches.length === 2) {
+    if (e.touches.length === 1) handleMove(e.touches[0].clientX, e.touches[0].clientY);
+    else if (e.touches.length === 2) {
         const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
         const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
@@ -569,32 +606,37 @@ canvas.addEventListener('touchmove', e => {
         lastPinchDist = dist;
     }
 }, { passive: false });
-
 canvas.addEventListener('touchend', handleEnd);
 
-// --- UI 輔助函數 ---
-function updateAddRadius() {
-    const mass = parseFloat(document.getElementById('add-mass').value) || 0;
-    const radiusInput = document.getElementById('add-radius');
-    // 自動計算建議半徑
-    const suggestedRadius = Math.max(5, Math.pow(mass / 100, 1/3) * 10);
-    radiusInput.value = Math.round(suggestedRadius);
+// --- 介面功能 ---
+function detectDevice() {
+    isTouchMode = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    updateUIForMode();
 }
+
+function updateUIForMode() {
+    const icon = document.getElementById('device-icon');
+    const text = document.getElementById('device-text');
+    const label = document.getElementById('mode-label');
+    if (isTouchMode) {
+        icon.innerText = "📱"; text.innerText = "長按 0.6s 選單 / 雙指縮放"; label.innerText = "行動裝置";
+    } else {
+        icon.innerText = "💻"; text.innerText = "滑鼠拖曳 / 右鍵同向彈射"; label.innerText = "電腦";
+    }
+}
+
+function toggleDeviceMode() { isTouchMode = !isTouchMode; updateUIForMode(); }
 
 function showContextMenu(x, y, target) {
     const menu = document.getElementById('context-menu');
-    menu.style.display = 'block';
-    backdrop.style.display = 'block';
-    
-    if (isTouchMode) {
-        document.body.classList.add('mobile-context-active');
+    menu.style.display = 'block'; backdrop.style.display = 'block';
+    if (!isTouchMode) {
+        menu.style.left = Math.min(x, window.innerWidth - 300) + 'px';
+        menu.style.top = Math.min(y, window.innerHeight - 450) + 'px';
     } else {
-        document.body.classList.remove('mobile-context-active');
-        menu.style.left = x + 'px';
-        menu.style.top = y + 'px';
-        menu.style.transform = 'none';
+        menu.style.left = '50%'; menu.style.top = '50%';
+        menu.style.transform = 'translate(-50%, -50%)';
     }
-    
     currentContextTarget = target;
     if (target) {
         document.getElementById('edit-mode-section').classList.remove('hidden');
@@ -608,8 +650,10 @@ function showContextMenu(x, y, target) {
 }
 
 function hideContextMenu() { 
-    document.getElementById('context-menu').style.display = 'none'; 
-    backdrop.style.display = 'none';
+    const menu = document.getElementById('context-menu');
+    menu.style.display = 'none'; 
+    menu.style.transform = ''; 
+    backdrop.style.display = 'none'; 
 }
 
 document.getElementById('btn-save-edit').onclick = () => {
@@ -625,11 +669,9 @@ document.getElementById('btn-save-edit').onclick = () => {
 document.getElementById('btn-confirm-add').onclick = () => {
     const wx = (lastInteractionPos.x - offsetX) / zoom;
     const wy = (lastInteractionPos.y - offsetY) / zoom;
-    
     const name = document.getElementById('add-name').value || "新天體";
     const mass = parseFloat(document.getElementById('add-mass').value) || 200;
     const radius = parseFloat(document.getElementById('add-radius').value) || 12;
-    
     bodies.push(new Body(wx, wy, 0, 0, mass, radius, '#8ab4f8', name));
     hideContextMenu();
 };
@@ -642,21 +684,26 @@ document.getElementById('btn-delete').onclick = () => {
 function startGame(type) {
     document.getElementById('home-screen').classList.add('hidden');
     document.getElementById('game-ui').classList.remove('hidden');
-    document.getElementById('show-panel-btn').classList.remove('hidden');
+    document.getElementById('show-panel-btn').classList.add('hidden'); // 開始時面板是開著的，隱藏按鈕
     if (type === 'solar') initSolarSystem();
     else if (type === 'empty') bodies = [];
     offsetX = canvas.width / 2; offsetY = canvas.height / 2;
     if (!animationId) loop();
 }
 
-function promptNStars() { hideResetModal(); isPaused = true; document.getElementById('n-star-modal').classList.add('active'); }
+function promptNStars() { isPaused = true; document.getElementById('n-star-modal').classList.add('active'); }
 function hideNStarModal() { document.getElementById('n-star-modal').classList.remove('active'); isPaused = false; }
 function confirmNStars() {
     initNStarSystem(parseInt(document.getElementById('n-count').value), parseFloat(document.getElementById('n-mass').value));
     startGame('nstar'); hideNStarModal();
 }
 
-function togglePanel(v) { document.getElementById('game-ui').classList.toggle('hidden', !v); document.getElementById('show-panel-btn').classList.toggle('hidden', v); }
+// 修改 togglePanel 邏輯，避免按鈕與面板重疊
+function togglePanel(v) { 
+    document.getElementById('game-ui').classList.toggle('hidden', !v); 
+    document.getElementById('show-panel-btn').classList.toggle('hidden', v); 
+}
+
 function pauseGame() { isPaused = !isPaused; document.getElementById('pause-btn').innerText = isPaused ? '繼續' : '暫停'; }
 function resetZoom() { zoom = 1; offsetX = canvas.width/2; offsetY = canvas.height/2; }
 function showResetModal() { isPaused = true; document.getElementById('reset-modal').classList.add('active'); }
@@ -674,4 +721,3 @@ detectDevice();
 </script>
 </body>
 </html>
-
