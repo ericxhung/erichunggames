@@ -1,0 +1,42 @@
+<style>
+    /* 清除 iframe 內的預設邊界 */
+    body { margin: 0; padding: 0; overflow: hidden; }
+
+    /* 你的導覽列樣式 */
+    nav {
+        background: #ffffff; 
+        border-bottom: 1px solid #dadce0;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        padding: 0 24px;
+        position: relative;
+        z-index: 10000;
+        justify-content: space-between;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        font-family: 'Google Sans', sans-serif;
+    }
+    .nav-brand { font-weight: 700; font-size: 1.25rem; color: #1a73e8; text-decoration: none; }
+    .nav-links { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+    .nav-btn {
+        padding: 8px 14px;
+        border-radius: 24px;
+        text-decoration: none;
+        font-size: 0.85rem;
+        color: #5f6368;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+    .nav-btn:hover { background: #f1f3f4; color: #202124; }
+</style>
+
+<nav>
+    <a href="index.html" class="nav-brand" target="_top">ERIC GAMES</a>
+    <div class="nav-links">
+        <a href="index.html" class="nav-btn" target="_top">首頁</a>
+        <a href="space.html" class="nav-btn" target="_blank">太空模擬</a>
+        <a href="sudoku.html" class="nav-btn" target="_blank">數獨 Pro+</a>
+        <a href="sandbox.html" class="nav-btn" target="_blank">沙盒</a>
+        <a href="chinesechess.html" class="nav-btn" target="_blank">象棋</a>
+    </div>
+</nav>
