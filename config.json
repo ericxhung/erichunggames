@@ -5,6 +5,7 @@
     "nav_m.html",
     "space.html",
     "sandbox.html",
-    "chinesechess.html"
+    "chinesechess.html",
+    "sudoku.html"
   ]
 }
