@@ -2,6 +2,7 @@
   "home": "index.html",
   "files": [
     "index.html",
+    "nav.html",
     "space.html",
     "sandbox.html",
     "chinesechess.html"
