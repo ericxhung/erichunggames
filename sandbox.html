@@ -5,120 +5,168 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>2D 物理沙盒</title>
     <style>
-        * { box-sizing: border-box; }
+        :root {
+            --bg-color: #1a1a1a;
+            --panel-bg: #2a2a2a;
+            --accent-color: #2196F3;
+            --text-color: #ffffff;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
         body {
-            background-color: #1a1a1a;
-            color: white;
-            font-family: sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: system-ui, -apple-system, sans-serif;
             display: flex;
             flex-direction: column;
-            align-items: center;
             margin: 0;
             height: 100vh;
             overflow: hidden;
             touch-action: none;
         }
+
         header {
-            width: 100%;
-            text-align: center;
-            padding: 5px 0;
-            background: #222;
+            padding: 10px;
+            background: var(--panel-bg);
             border-bottom: 1px solid #444;
+            text-align: center;
             flex-shrink: 0;
         }
-        h2 { margin: 5px 0; font-size: 1.1rem; }
+
+        h2 { margin: 0; font-size: 1.2rem; }
+
         .main-container {
             display: flex;
             flex-direction: row;
-            width: 100%;
             flex-grow: 1;
             overflow: hidden;
         }
+
+        /* 物品欄：在手機上會自動移到下方或縮小 */
         .controls {
-            width: 250px;
-            padding: 8px;
+            width: 220px;
+            padding: 10px;
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
             grid-auto-rows: min-content;
-            gap: 6px;
-            background: #333;
+            gap: 8px;
+            background: var(--panel-bg);
             border-right: 1px solid #444;
             overflow-y: auto;
         }
+
+        /* 畫布容器：佔滿剩餘空間 */
         .canvas-container {
             flex-grow: 1;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 10px;
-            background: #1a1a1a;
+            background: #000;
             position: relative;
+            overflow: hidden;
         }
+
         canvas {
-            border: 2px solid #444;
-            background-color: #000;
             image-rendering: pixelated;
             max-width: 100%;
             max-height: 100%;
+            background-color: #000;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
             cursor: crosshair;
+            object-fit: contain;
         }
+
+        /* 下方設定欄位：響應式排列 */
         .settings {
             display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding: 8px;
-            background: #222;
-            width: 100%;
-            font-size: 12px;
-            border-top: 1px solid #444;
-        }
-        .setting-item {
-            display: flex;
             flex-wrap: wrap;
+            gap: 15px;
+            padding: 12px;
+            background: var(--panel-bg);
+            border-top: 1px solid #444;
+            justify-content: space-around;
             align-items: center;
-            justify-content: center;
-            gap: 12px;
+            flex-shrink: 0;
         }
+
+        .setting-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
         button {
-            width: 100%;
-            padding: 6px 2px;
+            padding: 8px 4px;
             border: 2px solid transparent;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
-            font-size: 11px;
+            font-size: 12px;
             color: #fff;
-            transition: all 0.1s;
+            transition: transform 0.1s, border-color 0.2s;
+            background: #444;
         }
+
         button:active { transform: scale(0.95); }
-        .selected { border-color: white; box-shadow: 0 0 8px rgba(255,255,255,0.4); }
-        .view-btn { width: auto; padding: 4px 12px; background: #444; }
-        .view-btn.active { background: #2196F3; border-color: #fff; }
-        #clearBtn { grid-column: span 3; margin-top: 5px; }
-        input[type="number"] {
-            background: #444; color: white; border: 1px solid #666;
-            border-radius: 3px; width: 45px; padding: 2px; font-size: 11px;
+        button.selected { border-color: #fff; outline: 2px solid var(--accent-color); }
+
+        .view-btn { padding: 6px 15px; }
+        .view-btn.active { background: var(--accent-color); }
+
+        #clearBtn { 
+            grid-column: 1 / -1; 
+            background: #d32f2f;
+            margin-top: 10px;
         }
-        input[type="range"] { width: 80px; }
+
+        input[type="range"] {
+            width: 100px;
+            cursor: pointer;
+        }
+
+        input[type="number"] {
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 4px;
+            width: 50px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        /* 行動裝置適應 */
+        @media (max-width: 768px) {
+            .main-container { flex-direction: column; }
+            .controls {
+                width: 100%;
+                height: 150px;
+                border-right: none;
+                border-bottom: 1px solid #444;
+                grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            }
+            .settings { padding: 8px; gap: 10px; }
+            input[type="range"] { width: 80px; }
+        }
     </style>
 </head>
 <body>
-	<iframe 
-	    src="nav.html" 
-	    style="
-	        width: 100%; 
-	        height: 64px; 
-	        border: none; 
-	        display: block; /* 讓它變成區塊元素，自動佔據一行 */
-	        margin: 0;
-	        padding: 0;
-	    " 
-	    scrolling="no">
-	</iframe>
+<iframe 
+    src="nav.html" 
+    style="
+        width: 100%; 
+        height: 64px; 
+        border: none; 
+        display: block; /* 讓它變成區塊元素，自動佔據一行 */
+        margin: 0;
+        padding: 0;
+    " 
+    scrolling="no">
+</iframe>
     <header>
-        <h2>2D 物理沙盒</h2>
+        <h2>2D 物理沙盒 By 70804 洪旭辰</h2>
     </header>
     
     <div class="main-container">
@@ -143,35 +191,43 @@
             <button style="background:#333; color:#0ff; border:1px solid #0ff" data-type="WIRE">電線</button>
             <button style="background:#ffffaa; color:#000" data-type="BULB">燈泡</button>
             <button style="background:#fff; color:#000" data-type="EMPTY">橡皮擦</button>
-            <button style="background:#eee; color:#000" id="clearBtn">全部清空</button>
+            <button id="clearBtn">全部清空</button>
         </div>
 
-        <div class="canvas-container">
+        <div class="canvas-container" id="container">
             <canvas id="sandbox"></canvas>
         </div>
     </div>
 
     <div class="settings">
-        <div class="setting-item">
+        <div class="setting-group">
             <b>視角:</b>
             <button class="view-btn active" id="viewNormal">一般</button>
             <button class="view-btn" id="viewThermal">熱成像</button>
         </div>
-        <div class="setting-item">
-            環境溫度: <input type="range" id="ambientRange" min="-100" max="1000" value="20"> <input type="number" id="ambientNum" value="20">°C
-            模擬速度: <input type="range" id="speedRange" min="0.5" max="3" step="0.5" value="1"> <input type="number" id="speedNum" value="1" step="0.5">
-            筆刷大小: <input type="range" id="brushRange" min="1" max="50" value="11"> <input type="number" id="brushNum" value="11">
+        <div class="setting-group">
+            環境: <input type="range" id="ambientRange" min="-100" max="1000" value="20"> 
+            <input type="number" id="ambientNum" value="20">°C
+        </div>
+        <div class="setting-group">
+            速度: <input type="range" id="speedRange" min="0.5" max="3" step="0.5" value="1"> 
+            <input type="number" id="speedNum" value="1" step="0.5">
+        </div>
+        <div class="setting-group">
+            筆刷: <input type="range" id="brushRange" min="1" max="50" value="11"> 
+            <input type="number" id="brushNum" value="11">
         </div>
     </div>
 
 <script>
-// --- 核心配置 ---
+// --- 核心邏輯與常數 ---
 const canvas = document.getElementById('sandbox');
 const ctx = canvas.getContext('2d', { alpha: false });
-const width = 320, height = 240, cellSize = 2;
-canvas.width = width * cellSize;
-canvas.height = height * cellSize;
-ctx.imageSmoothingEnabled = false;
+const container = document.getElementById('container');
+
+// 邏輯解析度 (固定，確保物理計算一致)
+const width = 320, height = 240;
+const idx = (x, y) => x + y * width;
 
 // 元素常量
 const EMPTY = 0, SAND = 1, STONE = 2, IRON = 3, WOOD = 4, 
@@ -193,16 +249,16 @@ const PROPS = {
     [SAND]:      { coolRate: 0.1,  conduct: 0.15, density: 100, state: 'solid' },
     [WET_SAND]:  { coolRate: 0.2,  conduct: 0.4,  density: 120, state: 'solid' },
     [DIRT]:      { coolRate: 0.08, conduct: 0.12, density: 90, state: 'solid' },
-    [WET_DIRT]:  { coolRate: 0.15, conduct: 0.35, density: 110, viscosity: 5, state: 'solid' },
+    [WET_DIRT]:  { coolRate: 0.15, conduct: 0.35, density: 110, state: 'solid' },
     [SEED]:      { igniteTemp: 250, coolRate: 0.1,  conduct: 0.2,  density: 95, state: 'solid' },
     [PLANT]:     { igniteTemp: 220, coolRate: 0.05, conduct: 0.25, density: 1000, state: 'solid' },
-    [STONE]:     { coolRate: 0.05, conduct: 0.2,  density: 1000, isWall: true, strength: 50, state: 'solid' },
+    [STONE]:     { coolRate: 0.05, conduct: 0.2,  density: 1000, isWall: true, state: 'solid' },
     [ICE]:       { coolRate: 0.05, conduct: 0.3,  density: 90, baseTemp: -20, state: 'solid' },
-    [IRON]:      { coolRate: 0.02, conduct: 0.95, density: 1000, isWall: true, strength: 120, isConductor: true, state: 'solid' },
+    [IRON]:      { coolRate: 0.02, conduct: 0.95, density: 1000, isWall: true, isConductor: true, state: 'solid' },
     [GALLIUM]:   { coolRate: 0.05, conduct: 0.8,  density: 120, meltPoint: 30, viscosity: 3, isConductor: true, state: 'liquid' },
-    [WOOD]:      { igniteTemp: 210, coolRate: 0.03, conduct: 0.28, density: 1000, strength: 20, isWall: true, state: 'solid' }, 
+    [WOOD]:      { igniteTemp: 210, coolRate: 0.03, conduct: 0.28, density: 1000, isWall: true, state: 'solid' }, 
     [COAL]:      { igniteTemp: 380, coolRate: 0.01, conduct: 0.25, density: 1000, isWall: true, state: 'solid' }, 
-    [WATER]:     { coolRate: 0.8,  conduct: 0.5,  viscosity: 1, density: 10, freezePoint: 0, isConductor: true, state: 'liquid' },
+    [WATER]:     { coolRate: 0.8,  conduct: 0.5,  viscosity: 1, density: 10, state: 'liquid' },
     [OIL]:       { igniteTemp: 125, coolRate: 0.15, conduct: 0.35, viscosity: 1.5, density: 5, state: 'liquid' }, 
     [ACID]:      { coolRate: 0.2,  conduct: 0.1,  viscosity: 1.2, density: 11, state: 'liquid' },
     [FIRE]:      { coolRate: 0.8,  conduct: 0.85, baseTemp: 800, density: 0, state: 'gas' }, 
@@ -237,14 +293,34 @@ let nextTemp = new Float32Array(width * height);
 let nextCharge = new Float32Array(width * height);
 
 let currentElement = SAND, isInteracting = false, lastX = 0, lastY = 0;
-let mouseX = 0, mouseY = 0;
+let mouseX = -1, mouseY = -1;
 let simSteps = 1, brushSize = 11, ambientTemp = 20; 
 let visualMode = 'NORMAL'; 
 let isRightClick = false;
 let frameCount = 0;
 
 const screenImg = ctx.createImageData(width, height);
-const idx = (x, y) => x + y * width;
+
+// --- 響應式畫布調整 ---
+function resizeCanvas() {
+    const containerRect = container.getBoundingClientRect();
+    const ratio = width / height;
+    
+    let newWidth, newHeight;
+    if (containerRect.width / containerRect.height > ratio) {
+        newHeight = containerRect.height;
+        newWidth = newHeight * ratio;
+    } else {
+        newWidth = containerRect.width;
+        newHeight = newWidth / ratio;
+    }
+    
+    canvas.style.width = `${newWidth}px`;
+    canvas.style.height = `${newHeight}px`;
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 
 function place(x, y, type) {
     if (x < 0 || x >= width || y < 0 || y >= height) return;
@@ -284,273 +360,122 @@ function drawLine(x0, y0, x1, y1, type) {
 function update() {
     if (isInteracting) drawLine(lastX, lastY, lastX, lastY, currentElement);
 
-    let actualSteps = Math.floor(simSteps);
-    if (simSteps === 0.5) {
-        if (frameCount % 2 !== 0) return;
-        actualSteps = 1;
-    } else {
-        actualSteps = Math.ceil(simSteps);
-    }
+    let actualSteps = simSteps < 1 ? (frameCount % 2 === 0 ? 1 : 0) : Math.ceil(simSteps);
 
     for(let s = 0; s < actualSteps; s++) {
         nextGrid.set(grid);
         nextTemp.set(tempGrid);
         
-        // --- 電力更新 ---
+        // 電力重置與源頭
         for(let i = 0; i < chargeGrid.length; i++) {
             nextCharge[i] = (grid[i] === BATTERY) ? 1.0 : 0; 
         }
 
-        for(let iter = 0; iter < 4; iter++) {
+        // 簡單導電模擬
+        for(let iter = 0; iter < 2; iter++) {
             for(let i = 0; i < grid.length; i++) {
                 if (!PROPS[grid[i]].isConductor) continue;
                 let x = i % width, y = (i / width) | 0;
-                checkConduction(x, y, i);
-            }
-            for(let i = grid.length - 1; i >= 0; i--) {
-                if (!PROPS[grid[i]].isConductor) continue;
-                let x = i % width, y = (i / width) | 0;
-                checkConduction(x, y, i);
-            }
-        }
-
-        function checkConduction(x, y, i) {
-            const dx = [0, 0, -1, 1], dy = [-1, 1, 0, 0];
-            for(let k = 0; k < 4; k++) {
-                let nx = x + dx[k], ny = y + dy[k];
-                if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                    let nid = idx(nx, ny);
-                    if (PROPS[grid[nid]].isConductor) {
-                        if (nextCharge[i] < nextCharge[nid]) nextCharge[i] = nextCharge[nid];
-                        if (nextCharge[nid] < nextCharge[i]) nextCharge[nid] = nextCharge[i];
-                    }
-                }
-            }
-        }
-
-        // 熱能與化學更新
-        for(let y = 0; y < height; y++) {
-            for(let x = 0; x < width; x++) {
-                let i = idx(x, y);
-                let type = grid[i];
-
-                if (PROPS[type].baseTemp !== undefined && (type === FIRE || type === LAVA)) {
-                    nextTemp[i] = PROPS[type].baseTemp;
-                } else {
-                    nextTemp[i] -= (nextTemp[i] - ambientTemp) * PROPS[type].coolRate * 0.1;
-                }
-
                 const dx = [0, 0, -1, 1], dy = [-1, 1, 0, 0];
                 for(let k = 0; k < 4; k++) {
-                    let nx = x + dx[k], ny = y + dy[k];
-                    if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                        let nid = idx(nx, ny);
-                        let nType = grid[nid];
-
-                        // --- 化學反應擴充 ---
-                        
-                        // 1. 水 + 沙子/土壤 = 濕潤化
-                        if (type === WATER) {
-                            if (nType === SAND) { nextGrid[nid] = WET_SAND; nextGrid[i] = EMPTY; }
-                            else if (nType === DIRT) { nextGrid[nid] = WET_DIRT; nextGrid[i] = EMPTY; }
-                        }
-
-                        // 2. 酸水反應 (修正：現在酸液也會被消耗)
-                        if ((type === ACID && nType === WATER) || (type === WATER && nType === ACID)) {
-                            nextTemp[i] += 20;
-                            nextTemp[nid] += 20;
-                            // 當溫度夠高且發生反應產生蒸汽時
-                            if (tempGrid[type === WATER ? i : nid] > 80 && Math.random() < 0.25) {
-                                let waterIdx = (type === WATER) ? i : nid;
-                                let acidIdx = (type === ACID) ? i : nid;
-                                
-                                nextGrid[waterIdx] = STEAM;
-                                lifeGrid[waterIdx] = 40 + Math.random() * 40;
-                                
-                                // 酸也會被消耗，機率性變成空位或蒸汽
-                                if (Math.random() < 0.15) {
-                                    nextGrid[acidIdx] = EMPTY;
-                                }
-                            }
-                        }
-
-                        // 3. 熱傳導
-                        let tDiff = tempGrid[i] - tempGrid[nid];
-                        if (tDiff > 0.1) {
-                            let isUp = (dy[k] === -1);
-                            let directionFactor = isUp ? 0.3 : 0.8; 
-                            let mediumFactor = (nType === EMPTY || type === EMPTY) ? 0.015 : 0.2;
-                            let cond = (PROPS[type].conduct + PROPS[nType].conduct) * mediumFactor * directionFactor;
-                            nextTemp[nid] += tDiff * cond;
-                        }
-
-                        // 4. 燃燒
-                        if ((type === FIRE || tempGrid[i] > 380) && PROPS[nType].igniteTemp) {
-                            if (tempGrid[i] > PROPS[nType].igniteTemp) {
-                                if (Math.random() < 0.1) {
-                                    nextGrid[nid] = FIRE; 
-                                    lifeGrid[nid] = 30 + Math.random() * 20;
-                                    nextTemp[nid] = 800;
-                                }
-                            }
-                        }
-
-                        // 5. 酸蝕 (對牆體或金屬的反應)
-                        if (type === ACID && PROPS[nType].isWall && nType !== IRON) {
-                            if (Math.random() < 0.02) {
-                                nextGrid[nid] = EMPTY;
-                                if (Math.random() < 0.3) nextGrid[i] = EMPTY; // 侵蝕牆壁也會消耗酸
-                            }
-                        }
+                    let nid = idx(x + dx[k], y + dy[k]);
+                    if (nid >= 0 && nid < grid.length && PROPS[grid[nid]].isConductor) {
+                        if (nextCharge[i] < nextCharge[nid]) nextCharge[i] = nextCharge[nid];
                     }
                 }
-                if (type === BULB && nextCharge[i] > 0.4) nextTemp[i] += 12;
             }
         }
+
+        // 熱與化學
+        for(let i = 0; i < grid.length; i++) {
+            let x = i % width, y = (i / width) | 0;
+            let type = grid[i];
+
+            // 溫度回歸環境
+            if (type !== FIRE && type !== LAVA) {
+                nextTemp[i] -= (nextTemp[i] - ambientTemp) * PROPS[type].coolRate * 0.1;
+            }
+
+            const dx = [0, 1], dy = [1, 0]; // 檢查部分鄰居減少計算
+            for(let k = 0; k < 2; k++) {
+                let nx = x + dx[k], ny = y + dy[k];
+                if (nx < width && ny < height) {
+                    let nid = idx(nx, ny);
+                    let nType = grid[nid];
+
+                    // 酸水反應 (含消耗)
+                    if ((type === ACID && nType === WATER) || (type === WATER && nType === ACID)) {
+                        nextTemp[i] += 10; nextTemp[nid] += 10;
+                        if (nextTemp[i] > 80 && Math.random() < 0.2) {
+                            let wIdx = (type === WATER) ? i : nid;
+                            let aIdx = (type === ACID) ? i : nid;
+                            nextGrid[wIdx] = STEAM; lifeGrid[wIdx] = 50;
+                            if (Math.random() < 0.15) nextGrid[aIdx] = EMPTY; // 消耗酸
+                        }
+                    }
+
+                    // 熱傳導
+                    let tDiff = tempGrid[i] - tempGrid[nid];
+                    let cond = (PROPS[type].conduct + PROPS[nType].conduct) * 0.1;
+                    nextTemp[nid] += tDiff * cond;
+                    nextTemp[i] -= tDiff * cond;
+                }
+            }
+        }
+        
         grid.set(nextGrid);
         tempGrid.set(nextTemp);
         chargeGrid.set(nextCharge);
 
+        // 物理運動
         let processed = new Uint8Array(width * height);
         for (let y = height - 1; y >= 0; y--) {
-            let leftToRight = Math.random() > 0.5;
-            for (let x = (leftToRight ? 0 : width - 1); (leftToRight ? x < width : x >= 0); (leftToRight ? x++ : x--)) {
+            let lr = Math.random() > 0.5;
+            for (let x = (lr ? 0 : width - 1); (lr ? x < width : x >= 0); (lr ? x++ : x--)) {
                 let i = idx(x, y);
                 let type = grid[i];
                 if (type === EMPTY || processed[i]) continue;
 
-                // 壽命處理 (火、煙、蒸汽)
                 if (type === FIRE || type === SMOKE || type === STEAM) {
-                    if (--lifeGrid[i] <= 0) { 
-                        grid[i] = (type === FIRE && Math.random() < 0.3) ? SMOKE : EMPTY;
-                        lifeGrid[i] = 15 + Math.random() * 15;
-                        continue; 
-                    }
+                    if (--lifeGrid[i] <= 0) { grid[i] = (type === FIRE && Math.random() < 0.3) ? SMOKE : EMPTY; continue; }
                 }
 
-                // 壁障與爆炸物處理
-                if (PROPS[type].isWall && type !== WIRE && type !== BULB && type !== BATTERY) continue;
-                if (type === GUNPOWDER && tempGrid[i] >= PROPS[GUNPOWDER].igniteTemp) { explode(x, y, 12); continue; }
-                if (type === TNT && (tempGrid[i] >= PROPS[TNT].igniteTemp || chargeGrid[i] > 0.7)) { explode(x, y, 35); continue; }
-                
-                // 運動邏輯
-                if (type === SAND || type === WET_SAND || type === DIRT || type === WET_DIRT || type === GALLIUM || type === GUNPOWDER) {
-                    moveSolid(x, y, i, processed);
-                } else if (type === SEED) {
-                    growPlant(x, y, i, processed);
-                    moveSolid(x, y, i, processed);
-                } else if (type === PLANT) {
-                    growPlant(x, y, i, processed);
-                } else if (PROPS[type].state === 'liquid') {
-                    moveLiquid(x, y, i, type, processed);
-                } else if (PROPS[type].state === 'gas') {
-                    moveGas(x, y, i, type, processed);
-                }
-                
-                checkStateChange(x, y, i, type);
+                if (PROPS[type].isWall && type !== WIRE && type !== BULB) continue;
+
+                // 爆炸
+                if (type === TNT && (tempGrid[i] > 180 || chargeGrid[i] > 0.8)) { explode(x, y, 30); continue; }
+
+                // 下落與液體流動
+                if (PROPS[type].state === 'solid' && !PROPS[type].isWall) moveSolid(x, y, i, processed);
+                else if (PROPS[type].state === 'liquid') moveLiquid(x, y, i, type, processed);
+                else if (PROPS[type].state === 'gas') moveGas(x, y, i, type, processed);
             }
         }
     }
-}
-
-function checkStateChange(x, y, i, type) {
-    if (type === ICE && tempGrid[i] > 5) grid[i] = WATER;
-    if (type === WATER) {
-        if (tempGrid[i] < -2) grid[i] = ICE;
-        else if (tempGrid[i] > 100) { grid[i] = STEAM; lifeGrid[i] = 80; }
-    }
-    if (type === STONE && tempGrid[i] > 1100) grid[i] = LAVA;
-    if (type === LAVA && tempGrid[i] < 700) grid[i] = STONE;
 }
 
 function moveSolid(x, y, i, processed) {
     if (y >= height - 1) return;
     let down = i + width;
-    let target = grid[down];
-    if (target === EMPTY || (PROPS[target].density < PROPS[grid[i]].density && !PROPS[target].isWall)) {
-        swap(i, down, processed); return;
-    }
-    let dir = Math.random() < 0.5 ? 1 : -1;
-    let side = i + width + dir;
-    if (x + dir >= 0 && x + dir < width && grid[side] === EMPTY) swap(i, side, processed);
+    if (grid[down] === EMPTY) swap(i, down, processed);
+    else if (x > 0 && grid[down - 1] === EMPTY) swap(i, down - 1, processed);
+    else if (x < width - 1 && grid[down + 1] === EMPTY) swap(i, down + 1, processed);
 }
 
 function moveLiquid(x, y, i, type, processed) {
-    let v = PROPS[type].viscosity || 1;
-    if (Math.random() > (1 / v)) return; 
-    let down = i + width;
-    let dir = Math.random() < 0.5 ? 1 : -1;
-    let target = grid[down];
-
-    if (y < height - 1 && (target === EMPTY || PROPS[target].state === 'gas' || (PROPS[target].state === 'liquid' && PROPS[target].density < PROPS[type].density))) {
-        swap(i, down, processed);
-    } else {
-        let side = i + dir;
-        if (x + dir >= 0 && x + dir < width && (grid[side] === EMPTY || PROPS[grid[side]].state === 'gas')) swap(i, side, processed);
+    if (y < height - 1 && grid[i + width] === EMPTY) swap(i, i + width, processed);
+    else {
+        let dir = Math.random() > 0.5 ? 1 : -1;
+        if (x + dir >= 0 && x + dir < width && grid[i + dir] === EMPTY) swap(i, i + dir, processed);
     }
 }
 
 function moveGas(x, y, i, type, processed) {
-    if (y <= 0) { if (Math.random() < 0.05) grid[i] = EMPTY; return; }
-    let dirX = (Math.random() * 3 | 0) - 1;
-    let tx = x + dirX, ty = y - 1;
-    if (tx >= 0 && tx < width && ty >= 0) {
-        let target = idx(tx, ty);
-        if (grid[target] === EMPTY) swap(i, target, processed);
-    }
-}
-
-function growPlant(x, y, i, processed) {
-    if (lifeGrid[i] <= 0) return;
-    
-    let hasWater = false;
-    const dx = [0, 0, -1, 1], dy = [-1, 1, 0, 0];
-    for(let k = 0; k < 4; k++) {
-        let nx = x + dx[k], ny = y + dy[k];
-        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-            let nid = idx(nx, ny);
-            if (grid[nid] === WET_DIRT || grid[nid] === WET_SAND) {
-                hasWater = true;
-                if (Math.random() < 0.01) {
-                    grid[nid] = (grid[nid] === WET_DIRT) ? DIRT : SAND;
-                }
-                break;
-            }
-        }
-    }
-
-    if (!hasWater && Math.random() > 0.01) return;
-
-    if (Math.random() > 0.1) return;
-    let growDirX = (Math.random() * 3 | 0) - 1, growDirY = (Math.random() * 3 | 0) - 2; 
-    let tx = x + growDirX, ty = y + growDirY;
-    if (tx >= 0 && tx < width && ty >= 0 && ty < height) {
-        let target = idx(tx, ty);
-        if (grid[target] === EMPTY) {
-            grid[target] = PLANT; 
-            lifeGrid[target] = lifeGrid[i] - 1; 
-            processed[target] = 1; 
-            tempGrid[target] = tempGrid[i];
-        }
-    }
-}
-
-function explode(ex, ey, r) {
-    let r2 = r * r;
-    for (let i = -r; i <= r; i++) {
-        for (let j = -r; j <= r; j++) {
-            if (i*i + j*j < r2) {
-                let tx = ex+i, ty = ey+j;
-                if (tx >= 0 && tx < width && ty >= 0 && ty < height) {
-                    let d = idx(tx, ty);
-                    if (!PROPS[grid[d]].isWall || Math.random() < 0.4) {
-                        grid[d] = Math.random() < 0.3 ? FIRE : EMPTY;
-                        tempGrid[d] = 1000; lifeGrid[d] = 20;
-                    }
-                }
-            }
-        }
-    }
+    if (y > 0) {
+        let dir = (Math.random() * 3 | 0) - 1;
+        let target = idx(x + dir, y - 1);
+        if (x+dir >= 0 && x+dir < width && grid[target] === EMPTY) swap(i, target, processed);
+    } else if (Math.random() < 0.05) grid[i] = EMPTY;
 }
 
 function swap(a, b, processed) {
@@ -561,65 +486,74 @@ function swap(a, b, processed) {
     if (processed) processed[b] = 1;
 }
 
-function draw() {
-    const data32 = new Uint32Array(screenImg.data.buffer);
-    for (let i = 0; i < width * height; i++) {
-        let type = grid[i];
-        if (visualMode === 'NORMAL') {
-            let color = COLORS_HEX[type];
-            if (chargeGrid[i] > 0.01) {
-                if (type === WIRE) color = 0xFF00AAFF; 
-                else if (type === BULB) color = 0xFFFFFFFF; 
+function explode(ex, ey, r) {
+    for (let i = -r; i <= r; i++) {
+        for (let j = -r; j <= r; j++) {
+            if (i*i + j*j < r*r) {
+                let tx = ex+i, ty = ey+j;
+                if (tx >= 0 && tx < width && ty >= 0 && ty < height) {
+                    let d = idx(tx, ty);
+                    grid[d] = Math.random() < 0.3 ? FIRE : EMPTY;
+                    tempGrid[d] = 1000; lifeGrid[d] = 20;
+                }
             }
-            if (type === FIRE) {
-                if (lifeGrid[i] > 25) color = 0xFF32C8FF; 
-                else if (lifeGrid[i] > 10) color = 0xFF0055FF; 
-                else color = 0xFF0000AA; 
-            }
-            data32[i] = color;
-        } else if (visualMode === 'THERMAL') {
-            let t = tempGrid[i];
-            if (t < 0) data32[i] = 0xFFFF5500;
-            else if (t < 35) data32[i] = 0xFFBB0000;
-            else if (t < 90) data32[i] = 0xFF00AA00;
-            else if (t < 400) data32[i] = 0xFF0000FF;
-            else data32[i] = 0xFFFFFFFF;
         }
     }
-    const offscreen = document.createElement('canvas');
-    offscreen.width = width; offscreen.height = height;
-    offscreen.getContext('2d').putImageData(screenImg, 0, 0);
-    ctx.clearRect(0,0, canvas.width, canvas.height);
-    ctx.drawImage(offscreen, 0, 0, canvas.width, canvas.height);
+}
 
-    if (mouseX >= 0 && mouseX < width && mouseY >= 0 && mouseY < height) {
+function draw() {
+    const data32 = new Uint32Array(screenImg.data.buffer);
+    for (let i = 0; i < grid.length; i++) {
+        if (visualMode === 'NORMAL') {
+            let color = COLORS_HEX[grid[i]];
+            if (chargeGrid[i] > 0.1) {
+                if (grid[i] === WIRE) color = 0xFF00AAFF;
+                else if (grid[i] === BULB) color = 0xFFFFFFFF;
+            }
+            data32[i] = color;
+        } else {
+            let t = tempGrid[i];
+            if (t < 0) data32[i] = 0xFFFF5500;
+            else if (t < 40) data32[i] = 0xFFBB0000;
+            else if (t < 100) data32[i] = 0xFF00AA00;
+            else data32[i] = 0xFF0000FF;
+        }
+    }
+    const off = document.createElement('canvas');
+    off.width = width; off.height = height;
+    off.getContext('2d').putImageData(screenImg, 0, 0);
+    ctx.clearRect(0,0, canvas.width, canvas.height);
+    ctx.drawImage(off, 0, 0, canvas.width, canvas.height);
+
+    // 繪製筆刷外框
+    if (mouseX >= 0) {
+        const ratio = canvas.clientWidth / width;
         ctx.beginPath();
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
-        ctx.arc(mouseX * cellSize, mouseY * cellSize, brushSize * cellSize, 0, Math.PI * 2);
+        ctx.strokeStyle = "white";
+        ctx.arc(mouseX * ratio, mouseY * ratio, brushSize * ratio, 0, Math.PI*2);
         ctx.stroke();
     }
 }
 
+// 座標轉換
 function getPos(e) {
     const rect = canvas.getBoundingClientRect();
-    let cx = e.touches ? e.touches[0].clientX : e.clientX, cy = e.touches ? e.touches[0].clientY : e.clientY;
-    return { 
-        x: Math.floor(((cx - rect.left) / rect.width) * width), 
-        y: Math.floor(((cy - rect.top) / rect.height) * height) 
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+        x: Math.floor(((clientX - rect.left) / rect.width) * width),
+        y: Math.floor(((clientY - rect.top) / rect.height) * height)
     };
 }
 
 canvas.onmousedown = e => { isInteracting = true; isRightClick = (e.button === 2); let p = getPos(e); lastX = p.x; lastY = p.y; };
+canvas.ontouchstart = e => { e.preventDefault(); isInteracting = true; let p = getPos(e); lastX = p.x; lastY = p.y; };
 window.onmousemove = e => { let p = getPos(e); mouseX = p.x; mouseY = p.y; if(isInteracting) drawLine(lastX, lastY, p.x, p.y, currentElement); lastX = p.x; lastY = p.y; };
-window.onmouseup = () => isInteracting = false;
+window.ontouchmove = e => { let p = getPos(e); mouseX = p.x; mouseY = p.y; if(isInteracting) drawLine(lastX, lastY, p.x, p.y, currentElement); lastX = p.x; lastY = p.y; };
+window.onmouseup = window.ontouchend = () => { isInteracting = false; mouseX = -1; };
 canvas.oncontextmenu = e => e.preventDefault();
 
-canvas.onwheel = e => {
-    e.preventDefault();
-    let newSize = brushSize + (e.deltaY > 0 ? -2 : 2);
-    syncBrush(Math.max(1, Math.min(50, newSize)));
-};
-
+// UI 控制
 document.getElementById('toolbar').onclick = e => {
     const btn = e.target.closest('button');
     if (!btn || btn.id === 'clearBtn') return;
@@ -628,23 +562,18 @@ document.getElementById('toolbar').onclick = e => {
     currentElement = ELEMENT_MAP[btn.getAttribute('data-type')];
 };
 
-document.getElementById('clearBtn').onclick = () => { grid.fill(0); tempGrid.fill(ambientTemp); chargeGrid.fill(0); lifeGrid.fill(0); };
-document.getElementById('viewNormal').onclick = () => setView('NORMAL', 'viewNormal');
-document.getElementById('viewThermal').onclick = () => setView('THERMAL', 'viewThermal');
+document.getElementById('clearBtn').onclick = () => { grid.fill(0); tempGrid.fill(ambientTemp); chargeGrid.fill(0); };
+document.getElementById('viewNormal').onclick = () => { visualMode = 'NORMAL'; document.getElementById('viewNormal').classList.add('active'); document.getElementById('viewThermal').classList.remove('active'); };
+document.getElementById('viewThermal').onclick = () => { visualMode = 'THERMAL'; document.getElementById('viewThermal').classList.add('active'); document.getElementById('viewNormal').classList.remove('active'); };
 
-function setView(mode, id) { visualMode = mode; document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-
-const ambR = document.getElementById('ambientRange'), ambN = document.getElementById('ambientNum');
-function syncAmbient(val) { ambientTemp = parseInt(val); ambR.value = val; ambN.value = val; }
-ambR.oninput = e => syncAmbient(e.target.value); ambN.oninput = e => syncAmbient(e.target.value);
-
-const spdR = document.getElementById('speedRange'), spdN = document.getElementById('speedNum');
-function syncSpeed(val) { simSteps = parseFloat(val); spdR.value = val; spdN.value = val; }
-spdR.oninput = e => syncSpeed(e.target.value); spdN.oninput = e => syncSpeed(e.target.value);
-
-const bruR = document.getElementById('brushRange'), bruN = document.getElementById('brushNum');
-function syncBrush(val) { brushSize = parseInt(val); bruR.value = val; bruN.value = val; }
-bruR.oninput = e => syncBrush(e.target.value); bruN.oninput = e => syncBrush(e.target.value);
+// 滑桿與數值同步
+const bindInput = (idR, idN, cb) => {
+    const r = document.getElementById(idR), n = document.getElementById(idN);
+    r.oninput = n.oninput = e => { r.value = n.value = e.target.value; cb(e.target.value); };
+};
+bindInput('ambientRange', 'ambientNum', v => ambientTemp = parseInt(v));
+bindInput('speedRange', 'speedNum', v => simSteps = parseFloat(v));
+bindInput('brushRange', 'brushNum', v => brushSize = parseInt(v));
 
 function loop() { frameCount++; update(); draw(); requestAnimationFrame(loop); }
 loop();
