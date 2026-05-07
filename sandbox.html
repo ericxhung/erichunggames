@@ -2,22 +2,26 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2D 物理沙盒</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>2D 物理沙盒 By 70804Eric</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #1a1a1a;
-            --panel-bg: #2a2a2a;
-            --accent-color: #2196F3;
-            --text-color: #ffffff;
+            --primary: #1a73e8;
+            --surface: #f8f9fa;
+            --card: #ffffff;
+            --on-surface: #202124;
+            --on-surface-variant: #5f6368;
+            --outline: #dadce0;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--surface);
+            color: var(--on-surface);
+            font-family: 'Google Sans', sans-serif;
             display: flex;
             flex-direction: column;
             margin: 0;
@@ -27,65 +31,83 @@
         }
 
         header {
-            padding: 10px;
-            background: var(--panel-bg);
-            border-bottom: 1px solid #444;
+            padding: 16px;
+            background: var(--card);
+            border-bottom: 1px solid var(--outline);
             text-align: center;
             flex-shrink: 0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
 
-        h2 { margin: 0; font-size: 1.2rem; }
+        h2 { 
+            margin: 0; 
+            font-size: 1.25rem; 
+            font-weight: 700; 
+            color: var(--primary); 
+            letter-spacing: 0.5px;
+        }
 
         .main-container {
             display: flex;
             flex-direction: row;
             flex-grow: 1;
             overflow: hidden;
+            padding: 12px;
+            gap: 12px;
         }
 
-        /* 物品欄：在手機上會自動移到下方或縮小 */
         .controls {
             width: 220px;
-            padding: 10px;
+            padding: 12px;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             grid-auto-rows: min-content;
-            gap: 8px;
-            background: var(--panel-bg);
-            border-right: 1px solid #444;
+            gap: 10px;
+            background: var(--card);
+            border-radius: 20px;
+            border: 1px solid var(--outline);
             overflow-y: auto;
+            flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
-        /* 畫布容器：佔滿剩餘空間 */
         .canvas-container {
             flex-grow: 1;
+            position: relative;
+            background: #000;
+            border-radius: 24px;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #000;
-            position: relative;
-            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border: 4px solid #fff;
         }
 
-        canvas {
+        #sandbox {
+            width: 100%;
+            height: 100%;
             image-rendering: pixelated;
-            max-width: 100%;
-            max-height: 100%;
-            background-color: #000;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            cursor: crosshair;
-            object-fit: contain;
+            display: block;
         }
 
-        /* 下方設定欄位：響應式排列 */
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
         .settings {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
-            padding: 12px;
-            background: var(--panel-bg);
-            border-top: 1px solid #444;
-            justify-content: space-around;
+            gap: 24px;
+            padding: 16px 24px;
+            background: var(--card);
+            border-top: 1px solid var(--outline);
+            justify-content: center;
             align-items: center;
             flex-shrink: 0;
         }
@@ -93,62 +115,63 @@
         .setting-group {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            white-space: nowrap;
+            gap: 12px;
+            font-size: 0.95rem;
+            color: var(--on-surface-variant);
+            font-weight: 500;
         }
 
         button {
-            padding: 8px 4px;
-            border: 2px solid transparent;
-            border-radius: 6px;
+            padding: 10px 6px;
+            border: 1px solid var(--outline);
+            border-radius: 12px;
             cursor: pointer;
-            font-weight: bold;
-            font-size: 12px;
-            color: #fff;
-            transition: transform 0.1s, border-color 0.2s;
-            background: #444;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--on-surface);
+            background: #fff;
+            transition: all 0.2s ease;
         }
 
-        button:active { transform: scale(0.95); }
-        button.selected { border-color: #fff; outline: 2px solid var(--accent-color); }
+        button:hover { background: #f1f3f4; }
 
-        .view-btn { padding: 6px 15px; }
-        .view-btn.active { background: var(--accent-color); }
+        button.selected { 
+            border-color: var(--primary);
+            background: #e8f0fe;
+            color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.2);
+        }
+
+        .view-btn.active { 
+            background: var(--primary); 
+            color: #fff; 
+            border-color: var(--primary);
+        }
 
         #clearBtn { 
             grid-column: 1 / -1; 
-            background: #d32f2f;
-            margin-top: 10px;
+            background: #fce8e6; 
+            color: #d93025;
+            border-color: #fad2cf;
+            margin-top: 8px; 
+            padding: 14px; 
+            font-weight: 700;
         }
 
-        input[type="range"] {
-            width: 100px;
-            cursor: pointer;
+        input[type="range"] { accent-color: var(--primary); }
+
+        input[type="number"] { 
+            background: var(--surface); 
+            border: 1px solid var(--outline); 
+            padding: 4px; 
+            width: 50px; 
+            border-radius: 8px; 
+            text-align: center; 
         }
 
-        input[type="number"] {
-            background: #333;
-            color: #fff;
-            border: 1px solid #555;
-            padding: 4px;
-            width: 50px;
-            border-radius: 4px;
-            text-align: center;
-        }
-
-        /* 行動裝置適應 */
         @media (max-width: 768px) {
             .main-container { flex-direction: column; }
-            .controls {
-                width: 100%;
-                height: 150px;
-                border-right: none;
-                border-bottom: 1px solid #444;
-                grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-            }
-            .settings { padding: 8px; gap: 10px; }
-            input[type="range"] { width: 80px; }
+            .controls { width: 100%; height: 150px; grid-template-columns: repeat(5, 1fr); }
         }
     </style>
 </head>
@@ -166,70 +189,65 @@
     scrolling="no">
 </iframe>
     <header>
-        <h2>2D 物理沙盒 By 70804 洪旭辰</h2>
+        <h2>2D 物理沙盒 By 70804 Eric</h2>
     </header>
     
     <div class="main-container">
         <div class="controls" id="toolbar">
-            <button style="background:#e3c07e; color:#000" data-type="SAND" class="selected">沙子</button>
-            <button style="background:#888" data-type="STONE">石頭</button>
-            <button style="background:#555" data-type="IRON">鐵</button>
-            <button style="background:#8b4513" data-type="WOOD">木頭</button>
-            <button style="background:#222" data-type="COAL">煤炭</button>
-            <button style="background:#4040ff" data-type="WATER">水</button>
-            <button style="background:#4b3621" data-type="OIL">原油</button>
-            <button style="background:#7fff00; color:#000" data-type="ACID">酸液</button>
-            <button style="background:#ffaa00; color:#000" data-type="FIRE">火</button>
-            <button style="background:#444" data-type="GUNPOWDER">火藥</button>
-            <button style="background:#f00" data-type="TNT">TNT</button>
-            <button style="background:#ff4500" data-type="LAVA">岩漿</button>
-            <button style="background:#c0c0c0; color:#000" data-type="GALLIUM">鎵</button>
-            <button style="background:#aaddff; color:#000" data-type="ICE">冰</button>
-            <button style="background:#5c4033" data-type="DIRT">土壤</button>
-            <button style="background:#d2b48c; color:#000" data-type="SEED">種子</button>
-            <button style="background:#ffcc00; color:#000" data-type="BATTERY">電池</button>
-            <button style="background:#333; color:#0ff; border:1px solid #0ff" data-type="WIRE">電線</button>
-            <button style="background:#ffffaa; color:#000" data-type="BULB">燈泡</button>
-            <button style="background:#fff; color:#000" data-type="EMPTY">橡皮擦</button>
+            <button style="border-left: 5px solid #e3c07e" data-type="SAND" class="selected">沙子</button>
+            <button style="border-left: 5px solid #888" data-type="STONE">石頭</button>
+            <button style="border-left: 5px solid #555" data-type="IRON">鐵</button>
+            <button style="border-left: 5px solid #8b4513" data-type="WOOD">木頭</button>
+            <button style="border-left: 5px solid #333" data-type="COAL">煤炭</button>
+            <button style="border-left: 5px solid #2196F3" data-type="WATER">水</button>
+            <button style="border-left: 5px solid #4b3621" data-type="OIL">原油</button>
+            <button style="border-left: 5px solid #7fff00" data-type="ACID">酸液</button>
+            <button style="border-left: 5px solid #ff4400" data-type="FIRE">火</button>
+            <button style="border-left: 5px solid #444" data-type="GUNPOWDER">火藥</button>
+            <button style="border-left: 5px solid #f44336" data-type="TNT">TNT</button>
+            <button style="border-left: 5px solid #ff8800" data-type="LAVA">岩漿</button>
+            <button style="border-left: 5px solid #c0c0c0" data-type="GALLIUM">鎵</button>
+            <button style="border-left: 5px solid #aaddff" data-type="ICE">冰</button>
+            <button style="border-left: 5px solid #5c4033" data-type="DIRT">土壤</button>
+            <button style="border-left: 5px solid #d2b48c" data-type="SEED">種子</button>
+            <button style="border-left: 5px solid #ffcc00" data-type="BATTERY">電池</button>
+            <button style="border-left: 5px solid #0ff" data-type="WIRE">電線</button>
+            <button style="border-left: 5px solid #aaa" data-type="BULB">燈泡</button>
+            <button style="border-left: 5px solid #000" data-type="EMPTY">橡皮擦</button>
             <button id="clearBtn">全部清空</button>
         </div>
 
         <div class="canvas-container" id="container">
             <canvas id="sandbox"></canvas>
+            <canvas id="overlay"></canvas>
         </div>
     </div>
 
     <div class="settings">
         <div class="setting-group">
-            <b>視角:</b>
+            <span>視角:</span>
             <button class="view-btn active" id="viewNormal">一般</button>
-            <button class="view-btn" id="viewThermal">熱成像</button>
+            <button class="view-btn" id="viewThermal">熱感</button>
         </div>
         <div class="setting-group">
-            環境: <input type="range" id="ambientRange" min="-100" max="1000" value="20"> 
+            溫度: <input type="range" id="ambientRange" min="-50" max="500" value="20"> 
             <input type="number" id="ambientNum" value="20">°C
         </div>
         <div class="setting-group">
             速度: <input type="range" id="speedRange" min="0.5" max="3" step="0.5" value="1"> 
-            <input type="number" id="speedNum" value="1" step="0.5">
         </div>
         <div class="setting-group">
-            筆刷: <input type="range" id="brushRange" min="1" max="50" value="11"> 
+            筆刷: <input type="range" id="brushRange" min="1" max="40" value="11"> 
             <input type="number" id="brushNum" value="11">
         </div>
     </div>
 
 <script>
-// --- 核心邏輯與常數 ---
 const canvas = document.getElementById('sandbox');
 const ctx = canvas.getContext('2d', { alpha: false });
-const container = document.getElementById('container');
+const overlay = document.getElementById('overlay');
+const octx = overlay.getContext('2d');
 
-// 邏輯解析度 (固定，確保物理計算一致)
-const width = 320, height = 240;
-const idx = (x, y) => x + y * width;
-
-// 元素常量
 const EMPTY = 0, SAND = 1, STONE = 2, IRON = 3, WOOD = 4, 
       COAL = 5, WATER = 6, OIL = 7, ACID = 8, FIRE = 9, 
       TNT = 10, STEAM = 11, SMOKE = 12, LAVA = 13, GALLIUM = 14, ICE = 15,
@@ -245,7 +263,7 @@ const ELEMENT_MAP = {
 };
 
 const PROPS = {
-    [EMPTY]:     { coolRate: 0.8,  conduct: 0.02,  density: 0, state: 'gas' },
+    [EMPTY]:     { coolRate: 0.8,  conduct: 0.02, density: 0, state: 'gas' },
     [SAND]:      { coolRate: 0.1,  conduct: 0.15, density: 100, state: 'solid' },
     [WET_SAND]:  { coolRate: 0.2,  conduct: 0.4,  density: 120, state: 'solid' },
     [DIRT]:      { coolRate: 0.08, conduct: 0.12, density: 90, state: 'solid' },
@@ -282,72 +300,58 @@ const COLORS_HEX = {
     [BATTERY]: 0xFF00CCFF, [WIRE]: 0xFF333333, [BULB]: 0xFF555555
 };
 
-// 狀態網格
-let grid = new Uint8Array(width * height);
-let tempGrid = new Float32Array(width * height);
-let lifeGrid = new Int16Array(width * height);
-let chargeGrid = new Float32Array(width * height);
-
-let nextGrid = new Uint8Array(width * height);
-let nextTemp = new Float32Array(width * height);
-let nextCharge = new Float32Array(width * height);
-
-let currentElement = SAND, isInteracting = false, lastX = 0, lastY = 0;
-let mouseX = -1, mouseY = -1;
+let grid, tempGrid, lifeGrid, chargeGrid, nextGrid, nextTemp, nextCharge, screenImg;
+let width = 0, height = 0; 
+let currentElement = SAND, isInteracting = false, lastX = -1, lastY = -1;
+let mouseLogicX = -1, mouseLogicY = -1; 
+let rawMouseX = -1, rawMouseY = -1;     
 let simSteps = 1, brushSize = 11, ambientTemp = 20; 
-let visualMode = 'NORMAL'; 
-let isRightClick = false;
-let frameCount = 0;
+let visualMode = 'NORMAL', isRightClick = false; 
+let frameCount = 0, initialized = false;
 
-const screenImg = ctx.createImageData(width, height);
-
-// --- 響應式畫布調整 ---
-function resizeCanvas() {
-    const containerRect = container.getBoundingClientRect();
-    const ratio = width / height;
-    
-    let newWidth, newHeight;
-    if (containerRect.width / containerRect.height > ratio) {
-        newHeight = containerRect.height;
-        newWidth = newHeight * ratio;
-    } else {
-        newWidth = containerRect.width;
-        newHeight = newWidth / ratio;
-    }
-    
-    canvas.style.width = `${newWidth}px`;
-    canvas.style.height = `${newHeight}px`;
+function initGrids() {
+    const container = document.getElementById('container');
+    const rect = container.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return false;
+    const scale = 4;
+    width = Math.floor(rect.width / scale);
+    height = Math.floor(rect.height / scale);
+    if (width > 400) { height = Math.floor(height * (400 / width)); width = 400; }
+    canvas.width = width; canvas.height = height;
+    overlay.width = rect.width; overlay.height = rect.height;
+    grid = new Uint8Array(width * height);
+    tempGrid = new Float32Array(width * height).fill(ambientTemp);
+    lifeGrid = new Int16Array(width * height);
+    chargeGrid = new Float32Array(width * height);
+    nextGrid = new Uint8Array(width * height);
+    nextTemp = new Float32Array(width * height);
+    nextCharge = new Float32Array(width * height);
+    screenImg = ctx.createImageData(width, height);
+    initialized = true;
+    return true;
 }
 
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+const idx = (x, y) => x + y * width;
 
 function place(x, y, type) {
     if (x < 0 || x >= width || y < 0 || y >= height) return;
     let i = idx(x, y);
     if (grid[i] !== EMPTY && type !== EMPTY && type !== FIRE && type !== LAVA) return;
-    
     grid[i] = type;
     tempGrid[i] = PROPS[type].baseTemp !== undefined ? PROPS[type].baseTemp : ambientTemp;
     chargeGrid[i] = 0;
-    
     if (type === FIRE) lifeGrid[i] = 30 + Math.random() * 25;
-    else if (type === SMOKE) lifeGrid[i] = 30 + Math.random() * 40;
-    else if (type === STEAM) lifeGrid[i] = 50 + Math.random() * 60;
-    else if (type === SEED) lifeGrid[i] = 100;
-    else if (type === PLANT) lifeGrid[i] = 300; 
-    else lifeGrid[i] = 0;
 }
 
 function drawLine(x0, y0, x1, y1, type) {
+    if (!initialized) return;
     let dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
     let sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1, err = dx - dy;
-    let actualType = isRightClick ? EMPTY : type;
     while(true) {
-        let b2 = brushSize * brushSize;
+        let r2 = brushSize * brushSize;
         for(let i = -brushSize; i <= brushSize; i++) {
             for(let j = -brushSize; j <= brushSize; j++) {
-                if(i*i + j*j <= b2) place(x0 + i, y0 + j, actualType);
+                if(i*i + j*j <= r2) place(x0 + i, y0 + j, type);
             }
         }
         if (x0 === x1 && y0 === y1) break;
@@ -358,225 +362,159 @@ function drawLine(x0, y0, x1, y1, type) {
 }
 
 function update() {
-    if (isInteracting) drawLine(lastX, lastY, lastX, lastY, currentElement);
-
-    let actualSteps = simSteps < 1 ? (frameCount % 2 === 0 ? 1 : 0) : Math.ceil(simSteps);
-
-    for(let s = 0; s < actualSteps; s++) {
-        nextGrid.set(grid);
-        nextTemp.set(tempGrid);
-        
-        // 電力重置與源頭
-        for(let i = 0; i < chargeGrid.length; i++) {
-            nextCharge[i] = (grid[i] === BATTERY) ? 1.0 : 0; 
-        }
-
-        // 簡單導電模擬
-        for(let iter = 0; iter < 2; iter++) {
-            for(let i = 0; i < grid.length; i++) {
-                if (!PROPS[grid[i]].isConductor) continue;
-                let x = i % width, y = (i / width) | 0;
-                const dx = [0, 0, -1, 1], dy = [-1, 1, 0, 0];
-                for(let k = 0; k < 4; k++) {
-                    let nid = idx(x + dx[k], y + dy[k]);
-                    if (nid >= 0 && nid < grid.length && PROPS[grid[nid]].isConductor) {
-                        if (nextCharge[i] < nextCharge[nid]) nextCharge[i] = nextCharge[nid];
-                    }
-                }
-            }
-        }
-
-        // 熱與化學
+    if (!initialized) return;
+    if (isInteracting && mouseLogicX !== -1) {
+        const type = isRightClick ? EMPTY : currentElement;
+        if (lastX === -1) { lastX = mouseLogicX; lastY = mouseLogicY; }
+        drawLine(lastX, lastY, mouseLogicX, mouseLogicY, type);
+        lastX = mouseLogicX; lastY = mouseLogicY;
+    }
+    let steps = simSteps < 1 ? (frameCount % 2 === 0 ? 1 : 0) : Math.ceil(simSteps);
+    for(let s = 0; s < steps; s++) {
+        nextGrid.set(grid); nextTemp.set(tempGrid);
+        for(let i = 0; i < chargeGrid.length; i++) nextCharge[i] = (grid[i] === BATTERY) ? 1.0 : 0;
         for(let i = 0; i < grid.length; i++) {
-            let x = i % width, y = (i / width) | 0;
             let type = grid[i];
-
-            // 溫度回歸環境
-            if (type !== FIRE && type !== LAVA) {
-                nextTemp[i] -= (nextTemp[i] - ambientTemp) * PROPS[type].coolRate * 0.1;
-            }
-
-            const dx = [0, 1], dy = [1, 0]; // 檢查部分鄰居減少計算
-            for(let k = 0; k < 2; k++) {
-                let nx = x + dx[k], ny = y + dy[k];
-                if (nx < width && ny < height) {
-                    let nid = idx(nx, ny);
-                    let nType = grid[nid];
-
-                    // 酸水反應 (含消耗)
-                    if ((type === ACID && nType === WATER) || (type === WATER && nType === ACID)) {
-                        nextTemp[i] += 10; nextTemp[nid] += 10;
-                        if (nextTemp[i] > 80 && Math.random() < 0.2) {
-                            let wIdx = (type === WATER) ? i : nid;
-                            let aIdx = (type === ACID) ? i : nid;
-                            nextGrid[wIdx] = STEAM; lifeGrid[wIdx] = 50;
-                            if (Math.random() < 0.15) nextGrid[aIdx] = EMPTY; // 消耗酸
+            if (type === EMPTY) { nextTemp[i] -= (nextTemp[i] - ambientTemp) * 0.1; continue; }
+            nextTemp[i] -= (nextTemp[i] - ambientTemp) * PROPS[type].coolRate * 0.05;
+            let x = i % width, y = (i / width) | 0;
+            [idx(x+1, y), idx(x-1, y), idx(x, y+1), idx(x, y-1)].forEach(ni => {
+                if(ni >= 0 && ni < grid.length) {
+                    let nt = grid[ni], tD = tempGrid[i] - tempGrid[ni], cond = (PROPS[type].conduct + PROPS[nt].conduct) * 0.08;
+                    nextTemp[ni] += tD * cond; nextTemp[i] -= tD * cond;
+                    if(PROPS[type].isConductor && PROPS[nt].isConductor && nextCharge[ni] < nextCharge[i] * 0.95) nextCharge[ni] = nextCharge[i] * 0.95;
+                }
+            });
+        }
+        grid.set(nextGrid); tempGrid.set(nextTemp); chargeGrid.set(nextCharge);
+        let processed = new Uint8Array(width * height);
+        for(let y = height-1; y >= 0; y--) {
+            let left = Math.random() > 0.5;
+            for(let x = (left?0:width-1); (left?x<width:x>=0); (left?x++:x--)) {
+                let i = idx(x, y), type = grid[i];
+                if(type === EMPTY || processed[i] || (PROPS[type].isWall && type !== GALLIUM)) continue;
+                if(PROPS[type].state === 'solid') {
+                    let d = i + width;
+                    if(y < height-1) {
+                        if(grid[d] === EMPTY) swap(i, d, processed);
+                        else {
+                            let s = Math.random() > 0.5 ? 1 : -1;
+                            if(x+s >=0 && x+s < width && grid[d+s] === EMPTY) swap(i, d+s, processed);
                         }
                     }
-
-                    // 熱傳導
-                    let tDiff = tempGrid[i] - tempGrid[nid];
-                    let cond = (PROPS[type].conduct + PROPS[nType].conduct) * 0.1;
-                    nextTemp[nid] += tDiff * cond;
-                    nextTemp[i] -= tDiff * cond;
+                } else if(PROPS[type].state === 'liquid') {
+                    let d = i + width;
+                    if(y < height-1 && grid[d] === EMPTY) swap(i, d, processed);
+                    else {
+                        let s = Math.random() > 0.5 ? 1 : -1;
+                        if(x+s >=0 && x+s < width && grid[i+s] === EMPTY) swap(i, i+s, processed);
+                    }
                 }
             }
         }
-        
-        grid.set(nextGrid);
-        tempGrid.set(nextTemp);
-        chargeGrid.set(nextCharge);
-
-        // 物理運動
-        let processed = new Uint8Array(width * height);
-        for (let y = height - 1; y >= 0; y--) {
-            let lr = Math.random() > 0.5;
-            for (let x = (lr ? 0 : width - 1); (lr ? x < width : x >= 0); (lr ? x++ : x--)) {
-                let i = idx(x, y);
-                let type = grid[i];
-                if (type === EMPTY || processed[i]) continue;
-
-                if (type === FIRE || type === SMOKE || type === STEAM) {
-                    if (--lifeGrid[i] <= 0) { grid[i] = (type === FIRE && Math.random() < 0.3) ? SMOKE : EMPTY; continue; }
-                }
-
-                if (PROPS[type].isWall && type !== WIRE && type !== BULB) continue;
-
-                // 爆炸
-                if (type === TNT && (tempGrid[i] > 180 || chargeGrid[i] > 0.8)) { explode(x, y, 30); continue; }
-
-                // 下落與液體流動
-                if (PROPS[type].state === 'solid' && !PROPS[type].isWall) moveSolid(x, y, i, processed);
-                else if (PROPS[type].state === 'liquid') moveLiquid(x, y, i, type, processed);
-                else if (PROPS[type].state === 'gas') moveGas(x, y, i, type, processed);
-            }
-        }
     }
-}
-
-function moveSolid(x, y, i, processed) {
-    if (y >= height - 1) return;
-    let down = i + width;
-    if (grid[down] === EMPTY) swap(i, down, processed);
-    else if (x > 0 && grid[down - 1] === EMPTY) swap(i, down - 1, processed);
-    else if (x < width - 1 && grid[down + 1] === EMPTY) swap(i, down + 1, processed);
-}
-
-function moveLiquid(x, y, i, type, processed) {
-    if (y < height - 1 && grid[i + width] === EMPTY) swap(i, i + width, processed);
-    else {
-        let dir = Math.random() > 0.5 ? 1 : -1;
-        if (x + dir >= 0 && x + dir < width && grid[i + dir] === EMPTY) swap(i, i + dir, processed);
-    }
-}
-
-function moveGas(x, y, i, type, processed) {
-    if (y > 0) {
-        let dir = (Math.random() * 3 | 0) - 1;
-        let target = idx(x + dir, y - 1);
-        if (x+dir >= 0 && x+dir < width && grid[target] === EMPTY) swap(i, target, processed);
-    } else if (Math.random() < 0.05) grid[i] = EMPTY;
 }
 
 function swap(a, b, processed) {
     let t = grid[a]; grid[a] = grid[b]; grid[b] = t;
     let te = tempGrid[a]; tempGrid[a] = tempGrid[b]; tempGrid[b] = te;
-    let l = lifeGrid[a]; lifeGrid[a] = lifeGrid[b]; lifeGrid[b] = l;
     let c = chargeGrid[a]; chargeGrid[a] = chargeGrid[b]; chargeGrid[b] = c;
-    if (processed) processed[b] = 1;
-}
-
-function explode(ex, ey, r) {
-    for (let i = -r; i <= r; i++) {
-        for (let j = -r; j <= r; j++) {
-            if (i*i + j*j < r*r) {
-                let tx = ex+i, ty = ey+j;
-                if (tx >= 0 && tx < width && ty >= 0 && ty < height) {
-                    let d = idx(tx, ty);
-                    grid[d] = Math.random() < 0.3 ? FIRE : EMPTY;
-                    tempGrid[d] = 1000; lifeGrid[d] = 20;
-                }
-            }
-        }
-    }
+    if(processed) processed[b] = 1;
 }
 
 function draw() {
+    if (!initialized) return;
     const data32 = new Uint32Array(screenImg.data.buffer);
-    for (let i = 0; i < grid.length; i++) {
-        if (visualMode === 'NORMAL') {
+    for(let i=0; i<grid.length; i++) {
+        if(visualMode === 'NORMAL') {
             let color = COLORS_HEX[grid[i]];
-            if (chargeGrid[i] > 0.1) {
-                if (grid[i] === WIRE) color = 0xFF00AAFF;
-                else if (grid[i] === BULB) color = 0xFFFFFFFF;
+            if(chargeGrid[i] > 0.1) {
+                if(grid[i] === WIRE) color = 0xFF00AAFF;
+                else if(grid[i] === BULB) color = 0xFFFFFFFF;
             }
             data32[i] = color;
         } else {
-            let t = tempGrid[i];
-            if (t < 0) data32[i] = 0xFFFF5500;
-            else if (t < 40) data32[i] = 0xFFBB0000;
-            else if (t < 100) data32[i] = 0xFF00AA00;
-            else data32[i] = 0xFF0000FF;
+            let t = tempGrid[i], r = Math.min(255, Math.max(0, (t-20) * 0.8)), b = Math.min(255, Math.max(0, 255 - t));
+            data32[i] = 0xFF000000 | (b << 16) | r;
         }
     }
-    const off = document.createElement('canvas');
-    off.width = width; off.height = height;
-    off.getContext('2d').putImageData(screenImg, 0, 0);
-    ctx.clearRect(0,0, canvas.width, canvas.height);
-    ctx.drawImage(off, 0, 0, canvas.width, canvas.height);
-
-    // 繪製筆刷外框
-    if (mouseX >= 0) {
-        const ratio = canvas.clientWidth / width;
-        ctx.beginPath();
-        ctx.strokeStyle = "white";
-        ctx.arc(mouseX * ratio, mouseY * ratio, brushSize * ratio, 0, Math.PI*2);
-        ctx.stroke();
+    ctx.putImageData(screenImg, 0, 0);
+    octx.clearRect(0, 0, overlay.width, overlay.height);
+    if(rawMouseX !== -1) {
+        const rect = document.getElementById('container').getBoundingClientRect();
+        const screenBrushSize = brushSize * (rect.width / width);
+        octx.beginPath(); octx.strokeStyle = "rgba(255,255,255,0.8)"; octx.lineWidth = 2;
+        octx.arc(rawMouseX, rawMouseY, screenBrushSize, 0, Math.PI*2); octx.stroke();
+        octx.beginPath(); octx.strokeStyle = "rgba(0,0,0,0.4)"; octx.lineWidth = 1;
+        octx.arc(rawMouseX, rawMouseY, screenBrushSize, 0, Math.PI*2); octx.stroke();
     }
 }
 
-// 座標轉換
-function getPos(e) {
+function updateMouse(e) {
+    if (!initialized) return;
     const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return {
-        x: Math.floor(((clientX - rect.left) / rect.width) * width),
-        y: Math.floor(((clientY - rect.top) / rect.height) * height)
-    };
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX);
+    const cy = (e.touches ? e.touches[0].clientY : e.clientY);
+    rawMouseX = cx - rect.left; rawMouseY = cy - rect.top;
+    mouseLogicX = Math.floor((rawMouseX / rect.width) * width);
+    mouseLogicY = Math.floor((rawMouseY / rect.height) * height);
 }
 
-canvas.onmousedown = e => { isInteracting = true; isRightClick = (e.button === 2); let p = getPos(e); lastX = p.x; lastY = p.y; };
-canvas.ontouchstart = e => { e.preventDefault(); isInteracting = true; let p = getPos(e); lastX = p.x; lastY = p.y; };
-window.onmousemove = e => { let p = getPos(e); mouseX = p.x; mouseY = p.y; if(isInteracting) drawLine(lastX, lastY, p.x, p.y, currentElement); lastX = p.x; lastY = p.y; };
-window.ontouchmove = e => { let p = getPos(e); mouseX = p.x; mouseY = p.y; if(isInteracting) drawLine(lastX, lastY, p.x, p.y, currentElement); lastX = p.x; lastY = p.y; };
-window.onmouseup = window.ontouchend = () => { isInteracting = false; mouseX = -1; };
-canvas.oncontextmenu = e => e.preventDefault();
+// 滾輪功能補回
+window.addEventListener('wheel', e => {
+    if (rawMouseX === -1) return;
+    e.preventDefault();
+    const step = e.deltaY > 0 ? -2 : 2;
+    brushSize = Math.max(1, Math.min(40, brushSize + step));
+    document.getElementById('brushRange').value = brushSize;
+    document.getElementById('brushNum').value = brushSize;
+}, { passive: false });
 
-// UI 控制
+// 右鍵功能補回
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+canvas.addEventListener('mousedown', e => { 
+    isInteracting = true; 
+    isRightClick = (e.button === 2);
+    updateMouse(e); lastX = mouseLogicX; lastY = mouseLogicY; 
+});
+window.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    if(e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+        rawMouseX = -1; mouseLogicX = -1;
+    } else { updateMouse(e); }
+});
+window.addEventListener('mouseup', (e) => { 
+    isInteracting = false; lastX = -1; 
+    if(e.button === 2) isRightClick = false;
+});
+
+canvas.addEventListener('touchstart', e => { e.preventDefault(); isInteracting = true; updateMouse(e); lastX = mouseLogicX; lastY = mouseLogicY; }, {passive: false});
+window.addEventListener('touchmove', e => { if(isInteracting) { e.preventDefault(); updateMouse(e); } }, {passive: false});
+window.addEventListener('touchend', () => { isInteracting = false; lastX = -1; rawMouseX = -1; });
+
 document.getElementById('toolbar').onclick = e => {
     const btn = e.target.closest('button');
-    if (!btn || btn.id === 'clearBtn') return;
+    if(!btn || btn.id === 'clearBtn') return;
     document.querySelectorAll('#toolbar button').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-    currentElement = ELEMENT_MAP[btn.getAttribute('data-type')];
+    btn.classList.add('selected'); currentElement = ELEMENT_MAP[btn.dataset.type];
 };
 
-document.getElementById('clearBtn').onclick = () => { grid.fill(0); tempGrid.fill(ambientTemp); chargeGrid.fill(0); };
+document.getElementById('clearBtn').onclick = () => { grid.fill(0); tempGrid.fill(ambientTemp); };
 document.getElementById('viewNormal').onclick = () => { visualMode = 'NORMAL'; document.getElementById('viewNormal').classList.add('active'); document.getElementById('viewThermal').classList.remove('active'); };
 document.getElementById('viewThermal').onclick = () => { visualMode = 'THERMAL'; document.getElementById('viewThermal').classList.add('active'); document.getElementById('viewNormal').classList.remove('active'); };
 
-// 滑桿與數值同步
-const bindInput = (idR, idN, cb) => {
+const bind = (idR, idN, fn) => {
     const r = document.getElementById(idR), n = document.getElementById(idN);
-    r.oninput = n.oninput = e => { r.value = n.value = e.target.value; cb(e.target.value); };
+    r.oninput = e => { n.value = e.target.value; fn(e.target.value); };
+    n.oninput = e => { r.value = e.target.value; fn(e.target.value); };
 };
-bindInput('ambientRange', 'ambientNum', v => ambientTemp = parseInt(v));
-bindInput('speedRange', 'speedNum', v => simSteps = parseFloat(v));
-bindInput('brushRange', 'brushNum', v => brushSize = parseInt(v));
+bind('ambientRange', 'ambientNum', v => ambientTemp = parseInt(v));
+bind('brushRange', 'brushNum', v => brushSize = parseInt(v));
+document.getElementById('speedRange').oninput = e => simSteps = parseFloat(e.target.value);
 
-function loop() { frameCount++; update(); draw(); requestAnimationFrame(loop); }
-loop();
+window.addEventListener('resize', initGrids);
+function loop() { frameCount++; if (initialized) { update(); draw(); } requestAnimationFrame(loop); }
+window.onload = () => { if (initGrids()) loop(); };
 </script>
 </body>
 </html>
